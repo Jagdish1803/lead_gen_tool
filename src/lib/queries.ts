@@ -8,8 +8,35 @@ import type {
   WhatsAppState,
   Audit,
   Message,
+  MessageStatus,
   PipelineEvent,
 } from "@/lib/types";
+
+export interface SentEmail {
+  id: string;
+  business_id: string;
+  business_name: string;
+  to_email: string | null;
+  subject: string | null;
+  body: string;
+  status: MessageStatus;
+  sent_at: string | null;
+  created_at: string;
+}
+
+/** All outbound emails (drafted + sent), newest first. */
+export async function getSentEmails(limit = 200): Promise<SentEmail[]> {
+  return sql<SentEmail[]>`
+    select
+      m.id, m.business_id, b.name as business_name, b.email as to_email,
+      m.subject, m.body, m.status, m.sent_at, m.created_at
+    from messages m
+    join businesses b on b.id = m.business_id
+    where m.channel = 'email' and m.direction = 'outbound'
+    order by m.created_at desc
+    limit ${limit}
+  `;
+}
 
 /** Count of businesses in each pipeline stage. */
 export async function getStageCounts(): Promise<Record<BusinessStatus, number>> {

@@ -1,9 +1,17 @@
 import Link from "next/link";
-import { LayoutDashboard, Users, Search, Settings, Radio } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Search,
+  Settings,
+  Radio,
+  Mail,
+} from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leads", label: "Leads", icon: Users },
+  { href: "/emails", label: "Emails", icon: Mail },
   { href: "/searches", label: "Searches", icon: Search },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
