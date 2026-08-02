@@ -33,10 +33,10 @@ export function MobileMenu({
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/50 animate-in fade-in duration-200"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-0 top-0 flex h-full w-64 flex-col border-r bg-sidebar px-3 py-4">
+          <div className="absolute left-0 top-0 flex h-full w-64 flex-col border-r bg-sidebar px-3 py-4 animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between px-2 pb-5">
               <div className="flex items-center gap-2">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

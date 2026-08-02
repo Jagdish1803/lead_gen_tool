@@ -2,6 +2,7 @@ import "server-only";
 import nodemailer from "nodemailer";
 import { sql } from "@/lib/db";
 import { VALID_EMAIL } from "@/lib/email-finder";
+import { refreshContactStatus } from "@/lib/contact-status";
 
 /**
  * Email sender via SMTP (nodemailer). Automated — email has no ban risk.
@@ -91,11 +92,8 @@ export async function runEmailSender({
         text: msg.body,
       });
       await sql`update messages set status = 'sent', sent_at = now() where id = ${msg.id}`;
-      await sql`
-        update businesses set status = 'contacted'
-        where id = ${msg.business_id}
-          and status in ('found','audited','drafted','queued')
-      `;
+      // Only becomes 'contacted' once every available channel is done.
+      await refreshContactStatus(msg.business_id);
       await sql`insert into events (business_id, stage, level, message) values (${msg.business_id}, 'email', 'info', ${"Emailed " + msg.name})`;
       sent++;
     } catch (err) {

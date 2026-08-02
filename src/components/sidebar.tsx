@@ -25,7 +25,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`hidden shrink-0 flex-col border-r bg-sidebar py-4 md:flex ${
+      className={`hidden shrink-0 flex-col border-r bg-sidebar py-4 transition-[width,padding] duration-200 ease-in-out md:flex ${
         collapsed ? "w-16 px-2" : "w-60 px-3"
       }`}
     >

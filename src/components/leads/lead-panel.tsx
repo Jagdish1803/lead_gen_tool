@@ -155,11 +155,11 @@ export function LeadPanel({
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-40 bg-black/40"
+        className="fixed inset-0 z-40 bg-black/40 animate-in fade-in duration-200"
         onClick={onClose}
       />
       {/* Panel */}
-      <aside className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col overflow-y-auto border-l bg-background text-[13px] shadow-2xl">
+      <aside className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col overflow-y-auto border-l bg-background text-[13px] shadow-2xl animate-in slide-in-from-right duration-200">
         {loading || !b ? (
           <div className="flex h-full items-center justify-center text-muted-foreground">
             <Loader2 className="size-5 animate-spin" />

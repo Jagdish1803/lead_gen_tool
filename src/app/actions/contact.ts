@@ -2,29 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
+import { refreshContactStatus } from "@/lib/contact-status";
 
 export type ContactActionResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Mark a lead as contacted after you manually send the WhatsApp message.
- * Flips the queued outbound message to 'sent' and the business to 'contacted'.
+ * Mark the WhatsApp message as sent (after you send it manually). The lead
+ * only becomes "contacted" once every available channel is done.
  */
 export async function markContactedAction(
   businessId: string,
 ): Promise<ContactActionResult> {
   try {
     await sql`
-      update messages
-      set status = 'sent', sent_at = now()
+      update messages set status = 'sent', sent_at = now()
       where business_id = ${businessId}
-        and direction = 'outbound' and status = 'queued'
+        and channel = 'whatsapp' and direction = 'outbound'
+        and status = 'queued'
     `;
-    await sql`
-      update businesses set status = 'contacted' where id = ${businessId}
-    `;
+    await refreshContactStatus(businessId);
     await sql`
       insert into events (business_id, stage, level, message)
-      values (${businessId}, 'sender', 'info', 'Marked contacted (manual WhatsApp)')
+      values (${businessId}, 'sender', 'info', 'WhatsApp sent (manual)')
     `;
     revalidatePath("/");
     revalidatePath("/leads");
@@ -37,7 +36,7 @@ export async function markContactedAction(
   }
 }
 
-/** Undo a contacted mark (back to drafted / queued) in case of a misclick. */
+/** Undo the WhatsApp-sent mark (misclick). */
 export async function unmarkContactedAction(
   businessId: string,
 ): Promise<ContactActionResult> {
@@ -45,10 +44,11 @@ export async function unmarkContactedAction(
     await sql`
       update messages set status = 'queued', sent_at = null
       where business_id = ${businessId}
-        and direction = 'outbound' and status = 'sent'
+        and channel = 'whatsapp' and direction = 'outbound' and status = 'sent'
     `;
     await sql`
-      update businesses set status = 'drafted' where id = ${businessId}
+      update businesses set status = 'drafted'
+      where id = ${businessId} and status = 'contacted'
     `;
     revalidatePath("/");
     revalidatePath("/leads");
