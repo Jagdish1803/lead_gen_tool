@@ -136,7 +136,7 @@ export interface WriteRunResult {
 /** Draft messages for up to `limit` audited leads that don't have one yet. */
 export async function runWriter({
   limit = 8,
-  concurrency = 3,
+  concurrency = 2, // keep under free-tier AI rate limits; groq.ts also retries
 }: {
   limit?: number;
   concurrency?: number;
