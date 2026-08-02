@@ -2,6 +2,7 @@ import { AppShell } from "@/components/app-shell";
 import { NewSearchForm } from "@/components/new-search-form";
 import { AuditButton } from "@/components/audit-button";
 import { WriteButton } from "@/components/write-button";
+import { BatchButton } from "@/components/batch-button";
 import Link from "next/link";
 import { PIPELINE_STAGES } from "@/lib/types";
 import {
@@ -10,7 +11,14 @@ import {
   getWhatsAppState,
   getQueuedCount,
   getAppSettings,
+  getEmailCounts,
 } from "@/lib/queries";
+import { isEmailConfigured } from "@/lib/email-sender";
+import {
+  findEmailsAction,
+  writeEmailsAction,
+  sendEmailsAction,
+} from "@/app/actions/email";
 import {
   Card,
   CardContent,
@@ -31,16 +39,18 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [counts, leads, wa, queued, settings] = await Promise.all([
+  const [counts, leads, wa, queued, settings, email] = await Promise.all([
     getStageCounts(),
     getRecentLeads(),
     getWhatsAppState(),
     getQueuedCount(),
     getAppSettings(),
+    getEmailCounts(),
   ]);
 
   const waConnected = wa.status === "connected";
   const sendingOn = settings.sending_enabled;
+  const emailReady = isEmailConfigured();
 
   return (
     <AppShell>
@@ -109,6 +119,51 @@ export default async function DashboardPage() {
             ))}
           </div>
         </div>
+
+        {/* Email outreach */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-base">Email outreach</CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <BatchButton
+                  pending={email.toFind}
+                  idleLabel={`Find ${email.toFind} emails`}
+                  runningVerb="Finding emails"
+                  emptyLabel="Emails found"
+                  action={findEmailsAction}
+                />
+                <BatchButton
+                  pending={email.toDraft}
+                  idleLabel={`Draft ${email.toDraft} emails`}
+                  runningVerb="Drafting emails"
+                  emptyLabel="Emails drafted"
+                  action={writeEmailsAction}
+                />
+                <BatchButton
+                  pending={emailReady ? email.toSend : 0}
+                  idleLabel={`Send ${email.toSend} emails`}
+                  runningVerb="Sending emails"
+                  emptyLabel={emailReady ? "Nothing to send" : "Send emails"}
+                  action={sendEmailsAction}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Find business emails from their websites → draft an email → send
+            automatically.{" "}
+            {emailReady ? (
+              <span className="text-emerald-600 dark:text-emerald-400">
+                SMTP configured.
+              </span>
+            ) : (
+              <span className="text-amber-600 dark:text-amber-500">
+                Add SMTP settings in .env.local to enable sending.
+              </span>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Recent leads */}
         <Card>

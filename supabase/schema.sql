@@ -69,6 +69,9 @@ create table if not exists public.businesses (
 create index if not exists businesses_search_idx on public.businesses(search_id);
 create index if not exists businesses_status_idx on public.businesses(status);
 
+-- discovered contact email (Phase: email channel)
+alter table public.businesses add column if not exists email text;
+
 -- ---------- audits ------------------------------------------
 -- One row per website audit of a business.
 create table if not exists public.audits (
@@ -109,6 +112,9 @@ create table if not exists public.messages (
 create index if not exists messages_business_idx on public.messages(business_id);
 create index if not exists messages_status_idx on public.messages(status);
 create index if not exists messages_scheduled_idx on public.messages(scheduled_at);
+
+-- email subject line (for channel = 'email')
+alter table public.messages add column if not exists subject text;
 
 -- ---------- events ------------------------------------------
 -- Pipeline timeline / audit log for the dashboard + debugging.

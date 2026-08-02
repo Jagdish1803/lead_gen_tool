@@ -47,6 +47,7 @@ export interface Business {
   reviews_count: number | null;
   status: BusinessStatus;
   notes: string | null;
+  email: string | null;
 }
 
 export interface Audit {
@@ -70,6 +71,7 @@ export interface Message {
   channel: string;
   direction: "outbound" | "inbound";
   template_key: string | null;
+  subject: string | null;
   body: string;
   status: MessageStatus;
   scheduled_at: string | null;

@@ -47,6 +47,9 @@ export default async function LeadDetailPage({
   const waMessage = messages.find(
     (m) => m.channel === "whatsapp" && m.direction === "outbound",
   );
+  const emailMessage = messages.find(
+    (m) => m.channel === "email" && m.direction === "outbound",
+  );
   const contacted = CONTACTED.includes(business.status);
 
   return (
@@ -111,6 +114,9 @@ export default async function LeadDetailPage({
                 </a>
               ) : (
                 <Badge variant="outline">no website</Badge>
+              )}
+              {business.email && business.email !== "" && (
+                <div className="text-muted-foreground">✉ {business.email}</div>
               )}
               {business.maps_url && (
                 <div>
@@ -183,6 +189,31 @@ export default async function LeadDetailPage({
             />
           </CardContent>
         </Card>
+
+        {/* Email draft */}
+        {emailMessage && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Email draft</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <span className="text-muted-foreground">Subject:</span>{" "}
+                <span className="font-medium">{emailMessage.subject}</span>
+              </div>
+              <p className="whitespace-pre-wrap text-foreground/90">
+                {emailMessage.body}
+              </p>
+              <Badge
+                variant={
+                  emailMessage.status === "sent" ? "default" : "secondary"
+                }
+              >
+                {emailMessage.status}
+              </Badge>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Notes */}
         <Card>

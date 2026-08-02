@@ -179,11 +179,35 @@ export async function getWhatsAppState(): Promise<WhatsAppState> {
   return s;
 }
 
-/** Count of messages waiting in the send queue. */
+/** Count of WhatsApp messages waiting in the send queue. */
 export async function getQueuedCount(): Promise<number> {
   const [{ n }] = await sql<{ n: number }[]>`
     select count(*)::int as n from messages
-    where direction = 'outbound' and status = 'queued'
+    where direction = 'outbound' and channel = 'whatsapp' and status = 'queued'
   `;
   return n;
+}
+
+/** Pending counts for each stage of the email pipeline. */
+export async function getEmailCounts(): Promise<{
+  toFind: number;
+  toDraft: number;
+  toSend: number;
+}> {
+  const [row] = await sql<{ to_find: number; to_draft: number; to_send: number }[]>`
+    select
+      (select count(*)::int from businesses
+        where website is not null and email is null) as to_find,
+      (select count(*)::int from businesses b
+        where b.email is not null and b.email <> ''
+          and not exists (select 1 from messages m
+            where m.business_id = b.id and m.channel = 'email')) as to_draft,
+      (select count(*)::int from messages
+        where channel = 'email' and direction = 'outbound' and status = 'queued') as to_send
+  `;
+  return {
+    toFind: row.to_find,
+    toDraft: row.to_draft,
+    toSend: row.to_send,
+  };
 }
