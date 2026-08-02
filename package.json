@@ -12,7 +12,8 @@
     "worker": "node --env-file=.env.local worker/whatsapp-worker.mjs",
     "reset": "node --env-file=.env.local scripts/reset.mjs",
     "reset:pipeline": "node --env-file=.env.local scripts/reset.mjs --pipeline",
-    "email:test": "node --env-file=.env.local scripts/test-email.mjs"
+    "email:test": "node --env-file=.env.local scripts/test-email.mjs",
+    "inbox:test": "node --env-file=.env.local scripts/test-inbox.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
