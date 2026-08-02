@@ -5,6 +5,7 @@ import { isEmailConfigured } from "@/lib/email-sender";
 import { Sidebar } from "@/components/sidebar";
 import { MobileMenu } from "@/components/mobile-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CommandPalette } from "@/components/command-palette";
 
 export async function AppShell({
   children,
@@ -36,6 +37,7 @@ export async function AppShell({
             </div>
           )}
           <div className="ml-auto flex items-center gap-2">
+            <CommandPalette />
             <Link
               href="/leads"
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
