@@ -87,6 +87,32 @@ export interface PipelineEvent {
   meta: Record<string, unknown> | null;
 }
 
+export interface AppSettings {
+  id: number;
+  sending_enabled: boolean;
+  min_delay_sec: number;
+  max_delay_sec: number;
+  daily_cap: number;
+  updated_at: string;
+}
+
+export type WhatsAppStatus =
+  | "disconnected"
+  | "connecting"
+  | "qr"
+  | "connected";
+
+export interface WhatsAppState {
+  id: number;
+  status: WhatsAppStatus;
+  qr: string | null;
+  phone: string | null;
+  last_error: string | null;
+  sent_today: number;
+  sent_today_date: string | null;
+  updated_at: string;
+}
+
 // Ordered pipeline stages for the funnel display.
 export const PIPELINE_STAGES: {
   key: BusinessStatus;

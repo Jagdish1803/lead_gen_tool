@@ -1,6 +1,12 @@
 import "server-only";
 import { sql } from "@/lib/db";
-import type { Business, BusinessStatus, Search } from "@/lib/types";
+import type {
+  Business,
+  BusinessStatus,
+  Search,
+  AppSettings,
+  WhatsAppState,
+} from "@/lib/types";
 
 /** Count of businesses in each pipeline stage. */
 export async function getStageCounts(): Promise<Record<BusinessStatus, number>> {
@@ -82,4 +88,27 @@ export async function getSearches(limit = 100): Promise<Search[]> {
     order by created_at desc
     limit ${limit}
   `;
+}
+
+/** Singleton app settings (pacing + master send switch). */
+export async function getAppSettings(): Promise<AppSettings> {
+  const [s] = await sql<AppSettings[]>`select * from app_settings where id = 1`;
+  return s;
+}
+
+/** Singleton WhatsApp worker state (status, QR, phone, daily count). */
+export async function getWhatsAppState(): Promise<WhatsAppState> {
+  const [s] = await sql<WhatsAppState[]>`
+    select * from whatsapp_state where id = 1
+  `;
+  return s;
+}
+
+/** Count of messages waiting in the send queue. */
+export async function getQueuedCount(): Promise<number> {
+  const [{ n }] = await sql<{ n: number }[]>`
+    select count(*)::int as n from messages
+    where direction = 'outbound' and status = 'queued'
+  `;
+  return n;
 }

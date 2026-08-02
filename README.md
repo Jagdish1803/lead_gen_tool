@@ -22,8 +22,22 @@ See [CONCEPT.md](./CONCEPT.md) for the full concept, decisions, and phased plan.
   stale, reachability) + best-effort PageSpeed (needs free `PAGESPEED_API_KEY`).
 - **Phase 3 — Writer** ✅ AI-drafted outreach per lead (Gemini free tier,
   swappable to Claude); template fallback when no key.
+- **Phase 4 — Sender** ✅ Baileys WhatsApp worker + slow-pacing engine
+  (1 msg / 3–5 min randomized, daily cap, master switch OFF by default).
 
-Next up: **Phase 4 — Sender** (Baileys WhatsApp + slow-pacing engine).
+Next up: **Phase 5 — Dashboard polish** (funnel metrics, lead detail).
+
+## WhatsApp worker
+
+Sending runs in a separate long-lived process (keeps a WhatsApp session open):
+
+```bash
+npm run worker      # scan the QR (shown in terminal + Settings page) once
+```
+
+Use a **dedicated throwaway number**, not your personal line. Pacing + the
+master send switch live on the **Settings** page; sending is **OFF by default**.
+Auth is stored in `./baileys_auth` (git-ignored).
 
 ## Getting started
 

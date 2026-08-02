@@ -125,13 +125,41 @@ create table if not exists public.events (
 create index if not exists events_business_idx on public.events(business_id);
 create index if not exists events_created_idx on public.events(created_at desc);
 
+-- ---------- app_settings (singleton) ------------------------
+-- Sending controls for the WhatsApp pacing engine.
+create table if not exists public.app_settings (
+  id               int primary key default 1 check (id = 1),
+  sending_enabled  boolean not null default false,  -- master send switch (OFF by default)
+  min_delay_sec    int not null default 180,        -- 3 min
+  max_delay_sec    int not null default 300,        -- 5 min
+  daily_cap        int not null default 30,         -- max sends per day per number
+  updated_at       timestamptz not null default now()
+);
+insert into public.app_settings (id) values (1) on conflict (id) do nothing;
+
+-- ---------- whatsapp_state (singleton) ----------------------
+-- Live status of the Baileys worker, written by the worker, read by the UI.
+create table if not exists public.whatsapp_state (
+  id               int primary key default 1 check (id = 1),
+  status           text not null default 'disconnected', -- disconnected|connecting|qr|connected
+  qr               text,          -- current QR string to scan (when status = 'qr')
+  phone            text,          -- linked number once connected
+  last_error       text,
+  sent_today       int not null default 0,
+  sent_today_date  date,
+  updated_at       timestamptz not null default now()
+);
+insert into public.whatsapp_state (id) values (1) on conflict (id) do nothing;
+
 -- ---------- Row Level Security ------------------------------
 -- Solo internal tool for now: all DB access happens server-side with the
 -- service-role key (which bypasses RLS). We enable RLS with NO public
 -- policies so the anon/public key can't read or write anything by default.
 -- When we add auth / multi-user, we'll add proper policies here.
-alter table public.searches   enable row level security;
-alter table public.businesses enable row level security;
-alter table public.audits     enable row level security;
-alter table public.messages   enable row level security;
-alter table public.events     enable row level security;
+alter table public.searches      enable row level security;
+alter table public.businesses    enable row level security;
+alter table public.audits        enable row level security;
+alter table public.messages      enable row level security;
+alter table public.events        enable row level security;
+alter table public.app_settings  enable row level security;
+alter table public.whatsapp_state enable row level security;

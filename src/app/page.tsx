@@ -2,8 +2,15 @@ import { AppShell } from "@/components/app-shell";
 import { NewSearchForm } from "@/components/new-search-form";
 import { AuditButton } from "@/components/audit-button";
 import { WriteButton } from "@/components/write-button";
+import Link from "next/link";
 import { PIPELINE_STAGES } from "@/lib/types";
-import { getStageCounts, getRecentLeads } from "@/lib/queries";
+import {
+  getStageCounts,
+  getRecentLeads,
+  getWhatsAppState,
+  getQueuedCount,
+  getAppSettings,
+} from "@/lib/queries";
 import {
   Card,
   CardContent,
@@ -24,10 +31,16 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [counts, leads] = await Promise.all([
+  const [counts, leads, wa, queued, settings] = await Promise.all([
     getStageCounts(),
     getRecentLeads(),
+    getWhatsAppState(),
+    getQueuedCount(),
+    getAppSettings(),
   ]);
+
+  const waConnected = wa.status === "connected";
+  const sendingOn = settings.sending_enabled;
 
   return (
     <AppShell>
@@ -38,6 +51,33 @@ export default async function DashboardPage() {
             Find, audit, and reach out to local businesses — all in one place.
           </p>
         </div>
+
+        {/* Sending status strip */}
+        <Link
+          href="/settings"
+          className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-4 py-2.5 text-sm transition-colors hover:bg-accent"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className={`size-2 rounded-full ${waConnected ? "bg-emerald-500" : "bg-muted-foreground/40"}`}
+            />
+            WhatsApp:{" "}
+            <span className="font-medium">
+              {waConnected ? "connected" : wa.status}
+            </span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className={`size-2 rounded-full ${sendingOn ? "bg-emerald-500" : "bg-amber-500"}`}
+            />
+            Sending:{" "}
+            <span className="font-medium">{sendingOn ? "on" : "off"}</span>
+          </span>
+          <span className="text-muted-foreground">
+            {queued} queued · {wa.sent_today} sent today
+          </span>
+          <span className="ml-auto text-muted-foreground">Settings →</span>
+        </Link>
 
         <NewSearchForm />
 
