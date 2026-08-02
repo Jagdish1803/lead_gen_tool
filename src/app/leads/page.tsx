@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getLeadsWithAudits } from "@/lib/queries";
@@ -65,7 +66,8 @@ export default async function LeadsPage() {
                   leads.map((lead) => {
                     const issues = lead.issues ?? [];
                     return (
-                      <TableRow key={lead.id}>
+                      <Fragment key={lead.id}>
+                      <TableRow>
                         <TableCell className="font-medium">
                           <div>{lead.name}</div>
                           {lead.maps_url && (
@@ -129,6 +131,21 @@ export default async function LeadsPage() {
                           <Badge variant="secondary">{lead.status}</Badge>
                         </TableCell>
                       </TableRow>
+                      {lead.message_body && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="bg-muted/30">
+                            <div className="flex items-start gap-2 text-sm">
+                              <span className="mt-0.5 shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                                draft
+                              </span>
+                              <p className="text-foreground/90">
+                                {lead.message_body}
+                              </p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      </Fragment>
                     );
                   })
                 )}

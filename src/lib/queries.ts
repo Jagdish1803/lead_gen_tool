@@ -39,9 +39,11 @@ export interface LeadWithAudit extends Business {
   issues: string[] | null;
   audit_summary: string | null;
   pagespeed_mobile: number | null;
+  message_body: string | null;
+  message_template: string | null;
 }
 
-/** All leads with their most recent audit (if any), newest first. */
+/** All leads with their most recent audit + drafted message, newest first. */
 export async function getLeadsWithAudits(
   limit = 200,
 ): Promise<LeadWithAudit[]> {
@@ -51,7 +53,9 @@ export async function getLeadsWithAudits(
       a.has_website,
       a.issues,
       a.summary as audit_summary,
-      a.pagespeed_mobile
+      a.pagespeed_mobile,
+      m.body as message_body,
+      m.template_key as message_template
     from businesses b
     left join lateral (
       select * from audits
@@ -59,6 +63,12 @@ export async function getLeadsWithAudits(
       order by created_at desc
       limit 1
     ) a on true
+    left join lateral (
+      select * from messages
+      where business_id = b.id and direction = 'outbound'
+      order by created_at desc
+      limit 1
+    ) m on true
     order by b.created_at desc
     limit ${limit}
   `;

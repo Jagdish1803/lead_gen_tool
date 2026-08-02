@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { NewSearchForm } from "@/components/new-search-form";
 import { AuditButton } from "@/components/audit-button";
+import { WriteButton } from "@/components/write-button";
 import { PIPELINE_STAGES } from "@/lib/types";
 import { getStageCounts, getRecentLeads } from "@/lib/queries";
 import {
@@ -46,7 +47,10 @@ export default async function DashboardPage() {
             <h2 className="text-sm font-medium text-muted-foreground">
               Pipeline
             </h2>
-            <AuditButton pending={counts.found ?? 0} />
+            <div className="flex items-center gap-2">
+              <AuditButton pending={counts.found ?? 0} />
+              <WriteButton pending={counts.audited ?? 0} />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
             {PIPELINE_STAGES.map((stage) => (
