@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pitching Tool
 
-## Getting Started
+Find local businesses → audit their web presence → write a personalized pitch →
+send it over WhatsApp → track everything in one dashboard.
 
-First, run the development server:
+See [CONCEPT.md](./CONCEPT.md) for the full concept, decisions, and phased plan.
+
+## Stack
+
+- **Next.js 16** (App Router) + **TypeScript**
+- **Tailwind CSS 4** + **shadcn/ui**
+- **Supabase** (Postgres) for data
+- **SerpApi** for Google Maps results (Phase 1)
+- **Baileys** for WhatsApp sending (Phase 4)
+- AI writer — provider TBD (Phase 3)
+
+## Status
+
+**Phase 0 — Foundation** ✅ done: app scaffold, UI shell, Supabase wiring, DB schema.
+Next up: **Phase 1 — Finder** (SerpApi).
+
+## Getting started
 
 ```bash
+npm install
+cp .env.local.example .env.local   # then fill in the values
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.local.example` → `.env.local` and fill in as you reach each phase:
 
-## Learn More
+| Var | Needed for | Where to get it |
+|-----|-----------|-----------------|
+| `NEXT_PUBLIC_SUPABASE_URL` / `..._ANON_KEY` | data | Supabase → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | server-side writes | Supabase → Settings → API |
+| `SERPAPI_KEY` | Phase 1 (Finder) | https://serpapi.com/manage-api-key |
 
-To learn more about Next.js, take a look at the following resources:
+### Database
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Once your Supabase project exists, run [`supabase/schema.sql`](./supabase/schema.sql)
+in the Supabase SQL editor to create the tables.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project layout
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/               # routes (dashboard, leads, searches, settings)
+  components/        # UI (app-shell, forms) + components/ui (shadcn)
+  lib/
+    supabase/        # client.ts (browser) · server.ts (SSR) · admin.ts (service-role)
+    types.ts         # domain types mirroring the schema
+supabase/schema.sql  # database schema
+```
