@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
+import { Star } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { getLeadsWithAudits } from "@/lib/queries";
 import { WhatsAppSendButton } from "@/components/whatsapp-send-button";
@@ -55,6 +56,7 @@ export default async function LeadsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Business</TableHead>
+                  <TableHead>Rating</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Website</TableHead>
                   <TableHead>Audit</TableHead>
@@ -67,7 +69,7 @@ export default async function LeadsPage() {
                 {leads.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="py-10 text-center text-sm text-muted-foreground"
                     >
                       No leads yet. Run a search from the dashboard.
@@ -89,6 +91,23 @@ export default async function LeadsPage() {
                             >
                               view on maps
                             </Link>
+                          )}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {lead.rating != null ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                              <span className="font-medium tabular-nums">
+                                {lead.rating}
+                              </span>
+                              {lead.reviews_count != null && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({lead.reviews_count})
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         <TableCell>{lead.phone ?? "—"}</TableCell>
@@ -152,7 +171,7 @@ export default async function LeadsPage() {
                       </TableRow>
                       {lead.message_body && (
                         <TableRow>
-                          <TableCell colSpan={7} className="bg-muted/30">
+                          <TableCell colSpan={8} className="bg-muted/30">
                             <div className="flex items-start gap-2 text-sm">
                               <span className="mt-0.5 shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
                                 draft
