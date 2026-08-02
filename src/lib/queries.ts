@@ -193,8 +193,11 @@ export async function getEmailCounts(): Promise<{
   toFind: number;
   toDraft: number;
   toSend: number;
+  sent: number;
 }> {
-  const [row] = await sql<{ to_find: number; to_draft: number; to_send: number }[]>`
+  const [row] = await sql<
+    { to_find: number; to_draft: number; to_send: number; sent: number }[]
+  >`
     select
       (select count(*)::int from businesses
         where website is not null and email is null) as to_find,
@@ -203,11 +206,14 @@ export async function getEmailCounts(): Promise<{
           and not exists (select 1 from messages m
             where m.business_id = b.id and m.channel = 'email')) as to_draft,
       (select count(*)::int from messages
-        where channel = 'email' and direction = 'outbound' and status = 'queued') as to_send
+        where channel = 'email' and direction = 'outbound' and status = 'queued') as to_send,
+      (select count(*)::int from messages
+        where channel = 'email' and direction = 'outbound' and status = 'sent') as sent
   `;
   return {
     toFind: row.to_find,
     toDraft: row.to_draft,
     toSend: row.to_send,
+    sent: row.sent,
   };
 }

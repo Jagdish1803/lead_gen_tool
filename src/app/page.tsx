@@ -3,16 +3,8 @@ import { NewSearchForm } from "@/components/new-search-form";
 import { AuditButton } from "@/components/audit-button";
 import { WriteButton } from "@/components/write-button";
 import { BatchButton } from "@/components/batch-button";
-import Link from "next/link";
 import { PIPELINE_STAGES } from "@/lib/types";
-import {
-  getStageCounts,
-  getRecentLeads,
-  getWhatsAppState,
-  getQueuedCount,
-  getAppSettings,
-  getEmailCounts,
-} from "@/lib/queries";
+import { getStageCounts, getRecentLeads, getEmailCounts } from "@/lib/queries";
 import { isEmailConfigured } from "@/lib/email-sender";
 import {
   findEmailsAction,
@@ -39,17 +31,12 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [counts, leads, wa, queued, settings, email] = await Promise.all([
+  const [counts, leads, email] = await Promise.all([
     getStageCounts(),
     getRecentLeads(),
-    getWhatsAppState(),
-    getQueuedCount(),
-    getAppSettings(),
     getEmailCounts(),
   ]);
 
-  const waConnected = wa.status === "connected";
-  const sendingOn = settings.sending_enabled;
   const emailReady = isEmailConfigured();
 
   return (
@@ -62,32 +49,26 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* Sending status strip */}
-        <Link
-          href="/settings"
-          className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-4 py-2.5 text-sm transition-colors hover:bg-accent"
-        >
+        {/* Channel status strip */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border px-4 py-2.5 text-sm">
           <span className="inline-flex items-center gap-1.5">
             <span
-              className={`size-2 rounded-full ${waConnected ? "bg-emerald-500" : "bg-muted-foreground/40"}`}
+              className={`size-2 rounded-full ${emailReady ? "bg-emerald-500" : "bg-amber-500"}`}
             />
-            WhatsApp:{" "}
+            Email:{" "}
             <span className="font-medium">
-              {waConnected ? "connected" : wa.status}
+              {emailReady ? "connected" : "not set up"}
             </span>
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className={`size-2 rounded-full ${sendingOn ? "bg-emerald-500" : "bg-amber-500"}`}
-            />
-            Sending:{" "}
-            <span className="font-medium">{sendingOn ? "on" : "off"}</span>
-          </span>
           <span className="text-muted-foreground">
-            {queued} queued · {wa.sent_today} sent today
+            {email.toSend} ready to send · {email.sent} sent
           </span>
-          <span className="ml-auto text-muted-foreground">Settings →</span>
-        </Link>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-sky-500" />
+            WhatsApp:{" "}
+            <span className="font-medium">manual (tap to send)</span>
+          </span>
+        </div>
 
         <NewSearchForm />
 
