@@ -20,8 +20,10 @@ See [CONCEPT.md](./CONCEPT.md) for the full concept, decisions, and phased plan.
 - **Phase 1 — Finder** ✅ SerpApi Google Maps search → dedupe → DB → live dashboard.
 - **Phase 2 — Auditor** ✅ per-lead website checks (no-website, HTTPS, mobile,
   stale, reachability) + best-effort PageSpeed (needs free `PAGESPEED_API_KEY`).
+- **Phase 3 — Writer** ✅ AI-drafted outreach per lead (Gemini free tier,
+  swappable to Claude); template fallback when no key.
 
-Next up: **Phase 3 — Writer** (AI drafts the personalized message per lead).
+Next up: **Phase 4 — Sender** (Baileys WhatsApp + slow-pacing engine).
 
 ## Getting started
 
