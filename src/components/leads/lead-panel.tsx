@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { LeadDetail } from "@/lib/queries";
 import type { BusinessStatus } from "@/lib/types";
-import { waMeLink } from "@/lib/phone";
+import { waMeLink, likelyHasWhatsApp } from "@/lib/phone";
 import { markContactedAction } from "@/app/actions/contact";
 import { updateNotesAction, updateStatusAction } from "@/app/actions/lead";
 import { parseArea, STATUS_STYLES } from "@/components/leads/lead-utils";
@@ -197,10 +197,16 @@ export function LeadPanel({
             <div className="flex gap-2">
               <button
                 onClick={sendWhatsApp}
-                disabled={isPending || !b.phone}
+                disabled={isPending || !likelyHasWhatsApp(b.phone)}
+                title={
+                  likelyHasWhatsApp(b.phone)
+                    ? undefined
+                    : "Landline — no WhatsApp. Use email or call."
+                }
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                <Send className="size-4" /> WhatsApp
+                <Send className="size-4" />
+                {likelyHasWhatsApp(b.phone) ? "WhatsApp" : "No WhatsApp"}
               </button>
               <button
                 onClick={sendEmail}
@@ -322,7 +328,15 @@ export function LeadPanel({
               </h3>
               <div className="space-y-1.5">
                 <ContactRow label="Phone" value={b.phone} />
-                <ContactRow label="WhatsApp" value={b.phone} />
+                <ContactRow
+                  label="WhatsApp"
+                  value={likelyHasWhatsApp(b.phone) ? b.phone : null}
+                  note={
+                    !likelyHasWhatsApp(b.phone) && b.phone
+                      ? "landline"
+                      : undefined
+                  }
+                />
                 <ContactRow
                   label="Email"
                   value={b.email && b.email !== "" ? b.email : null}
@@ -412,10 +426,12 @@ function ContactRow({
   label,
   value,
   href,
+  note,
 }: {
   label: string;
   value: string | null;
   href?: string;
+  note?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -434,6 +450,10 @@ function ContactRow({
         ) : (
           <span className="font-mono text-[12px]">{value}</span>
         )
+      ) : note ? (
+        <span className="text-xs text-amber-600 dark:text-amber-500">
+          {note}
+        </span>
       ) : (
         <span className="text-muted-foreground/50">—</span>
       )}

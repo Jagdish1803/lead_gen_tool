@@ -1,5 +1,6 @@
 import "server-only";
 import { sql } from "@/lib/db";
+import { likelyHasWhatsApp } from "@/lib/phone";
 
 /**
  * A lead counts as "contacted" only when EVERY channel available for it has
@@ -16,7 +17,8 @@ export async function refreshContactStatus(businessId: string): Promise<void> {
   if (!b) return;
 
   const hasEmail = Boolean(b.email && b.email !== "");
-  const hasPhone = Boolean(b.phone);
+  // Only count WhatsApp as a required channel if the number can actually use it.
+  const hasWhatsApp = likelyHasWhatsApp(b.phone);
 
   const [flags] = await sql<{ email_done: boolean; wa_done: boolean }[]>`
     select
@@ -28,7 +30,7 @@ export async function refreshContactStatus(businessId: string): Promise<void> {
 
   const allChannelsDone =
     (hasEmail ? flags.email_done : true) &&
-    (hasPhone ? flags.wa_done : true) &&
+    (hasWhatsApp ? flags.wa_done : true) &&
     (flags.email_done || flags.wa_done);
 
   if (allChannelsDone) {

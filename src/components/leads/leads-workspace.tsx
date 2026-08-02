@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Star, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import type { LeadWithAudit } from "@/lib/queries";
 import { LeadPanel } from "@/components/leads/lead-panel";
+import { likelyHasWhatsApp } from "@/lib/phone";
 import {
   parseArea,
   daysAgo,
@@ -262,7 +263,11 @@ export function LeadsWorkspace({ leads }: { leads: LeadWithAudit[] }) {
                     </td>
                     <td className="px-3 py-2.5">
                       <span className="flex items-center gap-1">
-                        <ChannelDot label="W" active={l.wa_sent} />
+                        <ChannelDot
+                          label="W"
+                          active={l.wa_sent}
+                          available={likelyHasWhatsApp(l.phone)}
+                        />
                         <ChannelDot
                           label="@"
                           active={l.email_sent}

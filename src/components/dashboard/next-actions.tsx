@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { NextAction } from "@/lib/queries";
-import { waMeLink } from "@/lib/phone";
+import { waMeLink, likelyHasWhatsApp } from "@/lib/phone";
 import { markContactedAction } from "@/app/actions/contact";
 import { parseArea } from "@/components/leads/lead-utils";
 
@@ -70,7 +70,10 @@ export function NextActions({ actions }: { actions: NextAction[] }) {
           </div>
           <button
             onClick={() => whatsapp(a)}
-            disabled={!a.phone}
+            disabled={!likelyHasWhatsApp(a.phone)}
+            title={
+              likelyHasWhatsApp(a.phone) ? undefined : "Landline — no WhatsApp"
+            }
             className="rounded-md border px-3 py-1 text-xs font-medium text-emerald-600 hover:bg-emerald-500/10 disabled:opacity-40 dark:text-emerald-400"
           >
             WhatsApp
