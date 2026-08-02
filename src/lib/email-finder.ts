@@ -8,30 +8,51 @@ import type { Business } from "@/lib/types";
  */
 
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
+export const VALID_EMAIL = /^[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
 
-// Junk to ignore (asset filenames, tracking, examples, no-reply addresses).
+// Junk to ignore (assets, trackers, examples, no-reply, non-business domains).
 const JUNK = [
   /\.(png|jpg|jpeg|gif|svg|webp|css|js)$/i,
-  /(sentry|wixpress|example|yourdomain|domain\.com|email\.com|godaddy|cloudflare|schema\.org|w3\.org|sentry\.io)/i,
-  /^(no-?reply|donotreply|do-not-reply|noreply)@/i,
+  /(sentry|wixpress|example|yourdomain|domain\.com|email\.com|godaddy|cloudflare|schema\.org|w3\.org|adminblog|wordpress|wpengine|elementor|squarespace|jquery|bootstrap)/i,
+  /^(no-?reply|donotreply|do-not-reply|noreply|postmaster|mailer-daemon|webmaster)@/i,
 ];
+
+/** Decode + sanitize a raw match into a valid email, or null. */
+function cleanEmail(raw: string): string | null {
+  let s = raw;
+  try {
+    s = decodeURIComponent(raw); // turns %20 etc. into real chars
+  } catch {
+    /* keep raw */
+  }
+  s = s.toLowerCase().trim();
+  // Extract the strict email token (stops at &, \, spaces, entities…).
+  const m = s.match(/[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}/);
+  if (!m) return null;
+  const email = m[0].replace(/@www\d*\./, "@"); // team@www.x.com -> team@x.com
+  if (email.length > 60 || !VALID_EMAIL.test(email)) return null;
+  return email;
+}
 
 function extractEmail(html: string, siteHost: string): string | null {
   const found = new Set<string>();
-  // mailto: links first (most reliable)
-  for (const m of html.matchAll(/mailto:([^"'?>\s]+)/gi)) {
-    found.add(m[1].toLowerCase());
+  // mailto: links first (most reliable) — stop at delimiters/entities.
+  for (const m of html.matchAll(/mailto:([^"'?>\s&\\]+)/gi)) {
+    const e = cleanEmail(m[1]);
+    if (e) found.add(e);
   }
   for (const m of html.matchAll(EMAIL_RE)) {
-    found.add(m[0].toLowerCase());
+    const e = cleanEmail(m[0]);
+    if (e) found.add(e);
   }
-  const candidates = [...found].filter(
-    (e) => !JUNK.some((re) => re.test(e)) && e.length < 60,
-  );
+  const candidates = [...found].filter((e) => !JUNK.some((re) => re.test(e)));
   if (candidates.length === 0) return null;
   // Prefer an email on the same domain as the website.
   const host = siteHost.replace(/^www\./, "");
-  const sameDomain = candidates.find((e) => e.split("@")[1]?.includes(host));
+  const sameDomain = candidates.find((e) => {
+    const d = e.split("@")[1];
+    return d === host || d?.endsWith("." + host) || d?.includes(host);
+  });
   return sameDomain ?? candidates[0];
 }
 

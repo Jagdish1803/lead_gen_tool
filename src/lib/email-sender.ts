@@ -1,6 +1,7 @@
 import "server-only";
 import nodemailer from "nodemailer";
 import { sql } from "@/lib/db";
+import { VALID_EMAIL } from "@/lib/email-finder";
 
 /**
  * Email sender via SMTP (nodemailer). Automated — email has no ban risk.
@@ -74,6 +75,13 @@ export async function runEmailSender({
   let failed = 0;
 
   for (const msg of pending) {
+    // Never send to a malformed address (avoids relay/NXDOMAIN bounces).
+    if (!VALID_EMAIL.test(msg.email)) {
+      await sql`update messages set status = 'failed', error = 'invalid email address' where id = ${msg.id}`;
+      await sql`insert into events (business_id, stage, level, message) values (${msg.business_id}, 'email', 'warn', ${"Skipped invalid email: " + msg.email})`;
+      failed++;
+      continue;
+    }
     try {
       await tx.sendMail({
         from,
