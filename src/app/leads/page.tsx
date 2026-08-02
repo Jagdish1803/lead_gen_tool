@@ -2,8 +2,13 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { getLeadsWithAudits } from "@/lib/queries";
+import {
+  getLeadsWithAudits,
+  type LeadSort,
+  type LeadFilter,
+} from "@/lib/queries";
 import { WhatsAppSendButton } from "@/components/whatsapp-send-button";
+import { LeadsControls } from "@/components/leads-controls";
 import type { BusinessStatus } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,8 +42,15 @@ const ISSUE_LABELS: Record<string, string> = {
   audit_error: "audit error",
 };
 
-export default async function LeadsPage() {
-  const leads = await getLeadsWithAudits();
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string; filter?: string }>;
+}) {
+  const sp = await searchParams;
+  const sort = (sp.sort ?? "newest") as LeadSort;
+  const filter = (sp.filter ?? "all") as LeadFilter;
+  const leads = await getLeadsWithAudits({ sort, filter });
 
   return (
     <AppShell>
@@ -46,9 +58,11 @@ export default async function LeadsPage() {
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
           <span className="text-sm text-muted-foreground">
-            {leads.length} total
+            {leads.length} shown
           </span>
         </div>
+
+        <LeadsControls sort={sort} filter={filter} />
 
         <Card>
           <CardContent className="p-0">
@@ -82,15 +96,22 @@ export default async function LeadsPage() {
                       <Fragment key={lead.id}>
                       <TableRow>
                         <TableCell className="font-medium">
-                          <div>{lead.name}</div>
+                          <Link
+                            href={`/leads/${lead.id}`}
+                            className="hover:underline"
+                          >
+                            {lead.name}
+                          </Link>
                           {lead.maps_url && (
-                            <Link
-                              href={lead.maps_url}
-                              target="_blank"
-                              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                            >
-                              view on maps
-                            </Link>
+                            <div>
+                              <Link
+                                href={lead.maps_url}
+                                target="_blank"
+                                className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                              >
+                                view on maps
+                              </Link>
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">

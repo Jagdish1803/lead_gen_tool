@@ -6,6 +6,9 @@ import type {
   Search,
   AppSettings,
   WhatsAppState,
+  Audit,
+  Message,
+  PipelineEvent,
 } from "@/lib/types";
 
 /** Count of businesses in each pipeline stage. */
@@ -49,10 +52,51 @@ export interface LeadWithAudit extends Business {
   message_template: string | null;
 }
 
-/** All leads with their most recent audit + drafted message, newest first. */
-export async function getLeadsWithAudits(
-  limit = 200,
-): Promise<LeadWithAudit[]> {
+export type LeadSort = "newest" | "rating" | "reviews" | "name";
+export type LeadFilter =
+  | "all"
+  | "no_website"
+  | "has_issues"
+  | "not_contacted"
+  | "contacted";
+
+/** All leads with their most recent audit + drafted message, sorted/filtered. */
+export async function getLeadsWithAudits({
+  sort = "newest",
+  filter = "all",
+  limit = 300,
+}: {
+  sort?: LeadSort;
+  filter?: LeadFilter;
+  limit?: number;
+} = {}): Promise<LeadWithAudit[]> {
+  const orderBy =
+    sort === "rating"
+      ? sql`b.rating desc nulls last, b.reviews_count desc nulls last`
+      : sort === "reviews"
+        ? sql`b.reviews_count desc nulls last`
+        : sort === "name"
+          ? sql`b.name asc`
+          : sql`b.created_at desc`;
+
+  const conditions = [];
+  if (filter === "no_website") {
+    conditions.push(sql`a.has_website is false`);
+  } else if (filter === "has_issues") {
+    conditions.push(
+      sql`a.has_website is true and jsonb_array_length(coalesce(a.issues, '[]'::jsonb)) > 0`,
+    );
+  } else if (filter === "not_contacted") {
+    conditions.push(sql`b.status in ('found','audited','drafted','queued')`);
+  } else if (filter === "contacted") {
+    conditions.push(
+      sql`b.status in ('contacted','replied','interested','client')`,
+    );
+  }
+  const whereClause = conditions.length
+    ? sql`where ${conditions.reduce((acc, c) => sql`${acc} and ${c}`)}`
+    : sql``;
+
   return sql<LeadWithAudit[]>`
     select
       b.*,
@@ -75,9 +119,40 @@ export async function getLeadsWithAudits(
       order by created_at desc
       limit 1
     ) m on true
-    order by b.created_at desc
+    ${whereClause}
+    order by ${orderBy}
     limit ${limit}
   `;
+}
+
+export interface LeadDetail {
+  business: Business;
+  audit: Audit | null;
+  messages: Message[];
+  events: PipelineEvent[];
+}
+
+/** Full detail for one lead: business, latest audit, all messages, timeline. */
+export async function getLeadDetail(id: string): Promise<LeadDetail | null> {
+  const [business] = await sql<Business[]>`
+    select * from businesses where id = ${id}
+  `;
+  if (!business) return null;
+
+  const [audit] = await sql<Audit[]>`
+    select * from audits where business_id = ${id}
+    order by created_at desc limit 1
+  `;
+  const messages = await sql<Message[]>`
+    select * from messages where business_id = ${id}
+    order by created_at
+  `;
+  const events = await sql<PipelineEvent[]>`
+    select * from events where business_id = ${id}
+    order by created_at desc limit 50
+  `;
+
+  return { business, audit: audit ?? null, messages, events };
 }
 
 /** Search history, newest first. */
