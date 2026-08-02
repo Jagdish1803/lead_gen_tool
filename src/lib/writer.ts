@@ -155,7 +155,8 @@ export async function runWriter({
     where b.status = 'audited'
       and not exists (
         select 1 from messages m
-        where m.business_id = b.id and m.direction = 'outbound'
+        where m.business_id = b.id and m.channel = 'whatsapp'
+          and m.direction = 'outbound'
       )
     order by b.created_at
     limit ${limit}
@@ -168,7 +169,8 @@ export async function runWriter({
     where b.status = 'audited'
       and not exists (
         select 1 from messages m
-        where m.business_id = b.id and m.direction = 'outbound'
+        where m.business_id = b.id and m.channel = 'whatsapp'
+          and m.direction = 'outbound'
       )
   `;
 
