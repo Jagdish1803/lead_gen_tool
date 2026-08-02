@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { runFinder, type FinderResult } from "@/lib/finder";
+import { startPipeline } from "@/lib/pipeline";
 
 export type SearchActionResult =
   | { ok: true; data: FinderResult }
@@ -20,6 +21,8 @@ export async function runSearchAction(
 
   try {
     const data = await runFinder({ businessType: type, location: loc });
+    // Kick off the whole pipeline in the background (audit → write → email…).
+    startPipeline();
     revalidatePath("/");
     revalidatePath("/leads");
     revalidatePath("/searches");

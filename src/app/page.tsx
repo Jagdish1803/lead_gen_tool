@@ -1,10 +1,9 @@
 import { AppShell } from "@/components/app-shell";
 import { NewSearchForm } from "@/components/new-search-form";
-import { AuditButton } from "@/components/audit-button";
-import { WriteButton } from "@/components/write-button";
-import { BatchButton } from "@/components/batch-button";
 import { NextActions } from "@/components/dashboard/next-actions";
 import { OutreachWeek } from "@/components/dashboard/outreach-week";
+import { PipelineStatus } from "@/components/pipeline-status";
+import { RunPipelineButton } from "@/components/run-pipeline-button";
 import { PIPELINE_STAGES, type BusinessStatus } from "@/lib/types";
 import {
   getStageCounts,
@@ -14,12 +13,6 @@ import {
   getSearches,
   getEmailCounts,
 } from "@/lib/queries";
-import { isEmailConfigured } from "@/lib/email-sender";
-import {
-  findEmailsAction,
-  writeEmailsAction,
-  sendEmailsAction,
-} from "@/app/actions/email";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +52,7 @@ export default async function DashboardPage() {
   return (
     <AppShell title="Dashboard" subtitle="Find, audit and pitch local businesses">
       <div className="flex w-full flex-col gap-5">
+        <PipelineStatus />
         <NewSearchForm recent={recent} />
 
         {/* Pipeline */}
@@ -69,29 +63,15 @@ export default async function DashboardPage() {
               {total} leads across {searches.length} search
               {searches.length === 1 ? "" : "es"}
             </span>
-            <div className="ml-auto flex flex-wrap items-center gap-1.5">
-              <AuditButton pending={counts.found ?? 0} />
-              <WriteButton pending={counts.audited ?? 0} />
-              <BatchButton
-                pending={email.toFind}
-                idleLabel={`Find ${email.toFind} emails`}
-                runningVerb="Finding emails"
-                emptyLabel="Emails found"
-                action={findEmailsAction}
-              />
-              <BatchButton
-                pending={email.toDraft}
-                idleLabel={`Draft ${email.toDraft}`}
-                runningVerb="Drafting emails"
-                emptyLabel="Drafted"
-                action={writeEmailsAction}
-              />
-              <BatchButton
-                pending={isEmailConfigured() ? email.toSend : 0}
-                idleLabel={`Send ${email.toSend}`}
-                runningVerb="Sending emails"
-                emptyLabel="Send emails"
-                action={sendEmailsAction}
+            <div className="ml-auto">
+              <RunPipelineButton
+                pending={
+                  (counts.found ?? 0) +
+                  (counts.audited ?? 0) +
+                  email.toFind +
+                  email.toDraft +
+                  email.toSend
+                }
               />
             </div>
           </div>

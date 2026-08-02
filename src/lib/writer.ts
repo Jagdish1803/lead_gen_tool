@@ -47,11 +47,12 @@ function issueSentence(issues: string[]): string {
 function buildPrompt(lead: AuditedLead, template: TemplateKey): string {
   const city = lead.address?.split(",").slice(-2, -1)[0]?.trim() ?? "";
   const context = [
-    "You write short, friendly WhatsApp outreach messages for a web design & development agency.",
+    "You write WhatsApp outreach messages for a web design & development agency.",
     "Goal: start a genuine conversation with a local business about their website.",
-    "Rules: 2-3 short sentences, under 55 words. Warm and human, NOT salesy or spammy.",
-    "Address them by their business name. End with a soft, low-pressure question (e.g. offering a quick chat).",
-    "No placeholders like [Name]. No markdown. At most one emoji. Output ONLY the message text.",
+    "Length: 4-6 sentences, roughly 80-120 words — detailed and helpful, like a thoughtful email but in a natural WhatsApp tone.",
+    "Be warm, professional and specific. Mention the concrete issue(s) you found and how you can help. Explain the value briefly.",
+    "Address them by their business name. End with a soft, low-pressure question offering a quick call or chat.",
+    "STRICT: absolutely NO emojis of any kind. No placeholders like [Name]. No markdown. Output ONLY the message text.",
     "",
     `Business name: ${lead.name}`,
     lead.category ? `Type: ${lead.category}` : "",
@@ -61,17 +62,17 @@ function buildPrompt(lead: AuditedLead, template: TemplateKey): string {
   if (template === "no_website") {
     context.push(
       "Situation: They have NO website. Many of their competitors do.",
-      "Angle: Point out (kindly) that not having a website means losing customers who search online, and offer to build one.",
+      "Angle: Kindly explain that most customers search online first, so not having a website means losing potential business to competitors who do. Offer to build them a clean, affordable, mobile-friendly website that brings in enquiries.",
     );
   } else if (template === "poor_website") {
     context.push(
       `Situation: They have a website but it has issues: ${issueSentence(lead.issues ?? [])}.`,
-      "Angle: Mention you noticed a couple of things that could be improved, and offer a quick chat to fix them.",
+      "Angle: Explain the specific problems you noticed, why they matter (lost customers, poor mobile experience), and that they're quick to fix. Offer a short call to walk through the improvements.",
     );
   } else {
     context.push(
-      "Situation: Their website is decent. ",
-      "Angle: A light, complimentary note offering to help them get more customers from it (speed, SEO, bookings).",
+      "Situation: Their website is decent.",
+      "Angle: A genuine, complimentary note, then offer to help them get more customers from it — faster load times, better Google ranking, and online booking/enquiry forms. Offer a quick chat.",
     );
   }
 
@@ -81,13 +82,13 @@ function buildPrompt(lead: AuditedLead, template: TemplateKey): string {
 function templateMessage(lead: AuditedLead, template: TemplateKey): string {
   const name = lead.name;
   if (template === "no_website") {
-    return `Hi ${name}! We noticed you don't have a website yet — while many similar businesses nearby do, which is where a lot of new customers look first. We build clean, affordable websites and would love to help. Open to a quick chat?`;
+    return `Hi ${name}, I came across your business while looking at ${lead.category ?? "local businesses"} in the area. I noticed you don't have a website yet, which stood out because most of your competitors do. These days the vast majority of customers search online before they call or visit, so without a site you're likely losing enquiries to businesses that show up in those searches. We design clean, affordable, mobile-friendly websites for local businesses that are built to bring in leads and calls. I'd love to show you a couple of quick ideas for what yours could look like. Would you be open to a short call this week?`;
   }
   if (template === "poor_website") {
-    const s = issueSentence(lead.issues ?? []) || "a few things could be improved";
-    return `Hi ${name}! We had a look at your website and noticed ${s}. These are quick to fix and can bring you more customers. Would you be open to a short chat about it?`;
+    const s = issueSentence(lead.issues ?? []) || "a few things that could be improved";
+    return `Hi ${name}, I had a proper look at your website and, while there's a good foundation there, I noticed ${s}. Issues like these quietly cost you customers, especially on mobile where most people browse today. The good news is they're usually quick to fix, and sorting them out can noticeably improve how many visitors turn into enquiries and calls. We help local businesses tidy up their sites and get more out of them without a big spend. Would you be open to a short call so I can walk you through exactly what I'd change?`;
   }
-  return `Hi ${name}! Your website looks good. We help local businesses get more customers from their site (faster load, better Google ranking, online bookings). Would a quick chat be worth your time?`;
+  return `Hi ${name}, I came across your website and it already looks solid, so credit to you for that. Where I think there's real opportunity is in getting more customers out of it. Small improvements to loading speed, Google ranking, and adding an easy online booking or enquiry form can meaningfully increase the leads a good site brings in. We help local businesses do exactly that without overcomplicating things. If you're open to it, I'd be happy to jump on a quick call and share a few specific ideas for your site. Would that be worth a few minutes of your time?`;
 }
 
 async function writeForLead(lead: AuditedLead): Promise<void> {

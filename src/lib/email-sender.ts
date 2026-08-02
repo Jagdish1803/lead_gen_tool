@@ -102,8 +102,11 @@ export async function runEmailSender({
       await sql`insert into events (business_id, stage, level, message) values (${msg.business_id}, 'email', 'error', ${message})`;
       failed++;
     }
-    // Pace sends so the provider doesn't flag "unusual sending activity".
-    await new Promise((r) => setTimeout(r, 3500));
+    // Human-like, randomized gap between sends (≈ 6-16s) so it doesn't look
+    // like a spam blast and providers don't flag "unusual sending activity".
+    await new Promise((r) =>
+      setTimeout(r, 6000 + Math.floor(Math.random() * 10000)),
+    );
   }
 
   const [{ n }] = await sql<{ n: number }[]>`
