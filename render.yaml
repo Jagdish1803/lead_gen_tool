@@ -1,0 +1,43 @@
+# Render Blueprint — deploy the Next.js app.
+# In Render: New + → Blueprint → connect this repo. Then fill in the
+# secret env vars (marked sync:false) in the dashboard.
+services:
+  - type: web
+    name: pitching-tool
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      # --- Database (Supabase) ---
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      # --- APIs ---
+      - key: SERPAPI_KEY
+        sync: false
+      - key: PAGESPEED_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      # --- Email (Zoho SMTP + IMAP) ---
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        sync: false
+      - key: IMAP_HOST
+        sync: false
+      - key: IMAP_PORT
+        sync: false
+      - key: REPLY_TO
+        sync: false
