@@ -2,6 +2,8 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { getLeadsWithAudits } from "@/lib/queries";
+import { WhatsAppSendButton } from "@/components/whatsapp-send-button";
+import type { BusinessStatus } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -14,6 +16,14 @@ import {
 } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
+
+// Statuses that count as "already reached out".
+const CONTACTED: BusinessStatus[] = [
+  "contacted",
+  "replied",
+  "interested",
+  "client",
+];
 
 // Human labels for issue codes.
 const ISSUE_LABELS: Record<string, string> = {
@@ -50,13 +60,14 @@ export default async function LeadsPage() {
                   <TableHead>Audit</TableHead>
                   <TableHead className="text-right">Speed</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Outreach</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {leads.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="py-10 text-center text-sm text-muted-foreground"
                     >
                       No leads yet. Run a search from the dashboard.
@@ -130,10 +141,18 @@ export default async function LeadsPage() {
                         <TableCell>
                           <Badge variant="secondary">{lead.status}</Badge>
                         </TableCell>
+                        <TableCell>
+                          <WhatsAppSendButton
+                            businessId={lead.id}
+                            phone={lead.phone}
+                            message={lead.message_body}
+                            contacted={CONTACTED.includes(lead.status)}
+                          />
+                        </TableCell>
                       </TableRow>
                       {lead.message_body && (
                         <TableRow>
-                          <TableCell colSpan={6} className="bg-muted/30">
+                          <TableCell colSpan={7} className="bg-muted/30">
                             <div className="flex items-start gap-2 text-sm">
                               <span className="mt-0.5 shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
                                 draft
