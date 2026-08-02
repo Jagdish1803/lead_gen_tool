@@ -1,6 +1,6 @@
 import "server-only";
 import { sql } from "@/lib/db";
-import type { Business, BusinessStatus } from "@/lib/types";
+import type { Business, BusinessStatus, Search } from "@/lib/types";
 
 /** Count of businesses in each pipeline stage. */
 export async function getStageCounts(): Promise<Record<BusinessStatus, number>> {
@@ -19,6 +19,26 @@ export async function getRecentLeads(limit = 10): Promise<Business[]> {
   return sql<Business[]>`
     select *
     from businesses
+    order by created_at desc
+    limit ${limit}
+  `;
+}
+
+/** All leads, newest first. */
+export async function getAllLeads(limit = 200): Promise<Business[]> {
+  return sql<Business[]>`
+    select *
+    from businesses
+    order by created_at desc
+    limit ${limit}
+  `;
+}
+
+/** Search history, newest first. */
+export async function getSearches(limit = 100): Promise<Search[]> {
+  return sql<Search[]>`
+    select *
+    from searches
     order by created_at desc
     limit ${limit}
   `;
