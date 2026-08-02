@@ -13,6 +13,7 @@ const ENDPOINT =
 
 export interface PageSpeedResult {
   performance: number | null; // 0-100 Lighthouse performance score
+  loadTimeSec: number | null; // real load time (Largest Contentful Paint), seconds
 }
 
 export async function getPageSpeed(
@@ -35,15 +36,20 @@ export async function getPageSpeed(
       signal: controller.signal,
       cache: "no-store",
     });
-    if (!res.ok) return { performance: null };
+    if (!res.ok) return { performance: null, loadTimeSec: null };
 
     const data = await res.json();
     const score = data?.lighthouseResult?.categories?.performance?.score;
+    const lcpMs =
+      data?.lighthouseResult?.audits?.["largest-contentful-paint"]
+        ?.numericValue;
     return {
       performance: typeof score === "number" ? Math.round(score * 100) : null,
+      loadTimeSec:
+        typeof lcpMs === "number" ? Math.round(lcpMs / 100) / 10 : null,
     };
   } catch {
-    return { performance: null };
+    return { performance: null, loadTimeSec: null };
   } finally {
     clearTimeout(timeout);
   }

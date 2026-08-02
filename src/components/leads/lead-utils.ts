@@ -26,6 +26,8 @@ const REAL_ISSUES = [
   "slow_mobile",
   "stale_content",
   "unreachable",
+  "no_click_to_call",
+  "no_booking_form",
 ];
 
 /** Issues cell: "—" (no website), "clean", or "N issues". */

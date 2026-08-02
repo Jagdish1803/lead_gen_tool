@@ -14,6 +14,8 @@ interface SiteCheck {
   https: boolean;
   mobileViewport: boolean;
   staleCopyright: boolean;
+  clickToCall: boolean;
+  hasForm: boolean;
 }
 
 async function checkWebsite(rawUrl: string): Promise<SiteCheck> {
@@ -22,6 +24,8 @@ async function checkWebsite(rawUrl: string): Promise<SiteCheck> {
     https: false,
     mobileViewport: false,
     staleCopyright: false,
+    clickToCall: false,
+    hasForm: false,
   };
 
   const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
@@ -44,6 +48,8 @@ async function checkWebsite(rawUrl: string): Promise<SiteCheck> {
 
     const html = (await res.text()).slice(0, 200_000); // cap read
     result.mobileViewport = /<meta[^>]+name=["']viewport["']/i.test(html);
+    result.clickToCall = /href\s*=\s*["']?tel:/i.test(html);
+    result.hasForm = /<form[\s>]/i.test(html);
 
     const yearMatch = html.match(/(?:©|&copy;|copyright)[^0-9]{0,12}(20\d{2})/i);
     if (yearMatch) {
@@ -85,6 +91,9 @@ export async function auditBusiness(b: Business): Promise<void> {
   let https: boolean | null = null;
   let mobileOk: boolean | null = null;
   let perfMobile: number | null = null;
+  let loadTime: number | null = null;
+  let clickToCall: boolean | null = null;
+  let hasForm: boolean | null = null;
 
   try {
     if (!hasWebsite) {
@@ -96,12 +105,17 @@ export async function auditBusiness(b: Business): Promise<void> {
       } else {
         https = site.https;
         mobileOk = site.mobileViewport;
+        clickToCall = site.clickToCall;
+        hasForm = site.hasForm;
         if (!https) issues.push("no_https");
         if (!mobileOk) issues.push("not_mobile_friendly");
         if (site.staleCopyright) issues.push("stale_content");
+        if (!clickToCall) issues.push("no_click_to_call");
+        if (!hasForm) issues.push("no_booking_form");
 
         const ps = await getPageSpeed(b.website!, "mobile");
         perfMobile = ps.performance;
+        loadTime = ps.loadTimeSec;
         if (perfMobile !== null && perfMobile < 50) issues.push("slow_mobile");
       }
     }
@@ -110,10 +124,11 @@ export async function auditBusiness(b: Business): Promise<void> {
 
     await sql`
       insert into audits (
-        business_id, has_website, pagespeed_mobile, mobile_ok, https, issues, summary
+        business_id, has_website, pagespeed_mobile, mobile_ok, https,
+        load_time_sec, has_click_to_call, has_form, issues, summary
       ) values (
         ${b.id}, ${hasWebsite}, ${perfMobile}, ${mobileOk}, ${https},
-        ${sql.json(issues)}, ${summary}
+        ${loadTime}, ${clickToCall}, ${hasForm}, ${sql.json(issues)}, ${summary}
       )
     `;
     await sql`update businesses set status = 'audited' where id = ${b.id}`;

@@ -91,6 +91,11 @@ create table if not exists public.audits (
 
 create index if not exists audits_business_idx on public.audits(business_id);
 
+-- extra real audit signals
+alter table public.audits add column if not exists load_time_sec numeric(4,1);
+alter table public.audits add column if not exists has_click_to_call boolean;
+alter table public.audits add column if not exists has_form boolean;
+
 -- ---------- messages ----------------------------------------
 -- Outbound (and later inbound) messages per business.
 create table if not exists public.messages (

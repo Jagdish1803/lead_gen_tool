@@ -24,6 +24,8 @@ const ISSUE_PHRASES: Record<string, string> = {
   slow_mobile: "it loads slowly on mobile",
   stale_content: "the design looks dated",
   unreachable: "it wasn't loading when we checked",
+  no_click_to_call: "there's no tap-to-call button for mobile visitors",
+  no_booking_form: "there's no way for visitors to book or enquire online",
 };
 
 function pickTemplate(lead: AuditedLead): TemplateKey {

@@ -59,6 +59,9 @@ export interface Audit {
   pagespeed_desktop: number | null;
   mobile_ok: boolean | null;
   https: boolean | null;
+  load_time_sec: number | null;
+  has_click_to_call: boolean | null;
+  has_form: boolean | null;
   issues: string[];
   summary: string | null;
   screenshot_url: string | null;

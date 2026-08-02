@@ -37,6 +37,8 @@ const ISSUE_LABELS: Record<string, string> = {
   not_mobile_friendly: "Not mobile-friendly",
   slow_mobile: "Slow on mobile",
   stale_content: "Outdated design",
+  no_click_to_call: "No click-to-call number",
+  no_booking_form: "No booking / enquiry form",
 };
 
 function Dot({ ok }: { ok: boolean | null }) {
@@ -225,15 +227,39 @@ export function LeadPanel({
                 <div className="space-y-2">
                   <Row
                     dot={
-                      audit.pagespeed_mobile == null
+                      audit.load_time_sec == null
                         ? null
-                        : audit.pagespeed_mobile >= 50
+                        : audit.load_time_sec <= 3
                     }
-                    label="Mobile speed"
+                    label="Mobile load time"
                     value={
-                      audit.pagespeed_mobile != null
-                        ? `${audit.pagespeed_mobile}/100`
-                        : "not measured"
+                      audit.load_time_sec != null
+                        ? `${audit.load_time_sec}s`
+                        : audit.pagespeed_mobile != null
+                          ? `${audit.pagespeed_mobile}/100`
+                          : "not measured"
+                    }
+                  />
+                  <Row
+                    dot={audit.has_click_to_call}
+                    label="Click-to-call number"
+                    value={
+                      audit.has_click_to_call == null
+                        ? "—"
+                        : audit.has_click_to_call
+                          ? "present"
+                          : "missing"
+                    }
+                  />
+                  <Row
+                    dot={audit.has_form}
+                    label="Booking / enquiry form"
+                    value={
+                      audit.has_form == null
+                        ? "—"
+                        : audit.has_form
+                          ? "present"
+                          : "none"
                     }
                   />
                   <Row dot={audit.https} label="SSL certificate" value={audit.https ? "valid" : "missing"} />
