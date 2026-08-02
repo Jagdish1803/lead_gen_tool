@@ -7,12 +7,22 @@ import { sql } from "@/lib/db";
  * Configure with SMTP_* env vars (e.g. a Gmail app password, or Brevo).
  */
 
+/** Build the From header from SMTP_FROM_EMAIL/NAME, or the single EMAIL_FROM. */
+export function fromAddress(): string | undefined {
+  if (process.env.SMTP_FROM_EMAIL) {
+    return process.env.SMTP_FROM_NAME
+      ? `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`
+      : process.env.SMTP_FROM_EMAIL;
+  }
+  return process.env.EMAIL_FROM;
+}
+
 export function isEmailConfigured(): boolean {
   return Boolean(
     process.env.SMTP_HOST &&
       process.env.SMTP_USER &&
       process.env.SMTP_PASS &&
-      process.env.EMAIL_FROM,
+      fromAddress(),
   );
 }
 
@@ -59,7 +69,7 @@ export async function runEmailSender({
   `;
 
   const tx = transporter();
-  const from = process.env.EMAIL_FROM!;
+  const from = fromAddress()!;
   let sent = 0;
   let failed = 0;
 
@@ -68,6 +78,7 @@ export async function runEmailSender({
       await tx.sendMail({
         from,
         to: msg.email,
+        replyTo: process.env.REPLY_TO || undefined,
         subject: msg.subject || "Quick question about your website",
         text: msg.body,
       });

@@ -4,11 +4,17 @@
 import nodemailer from "nodemailer";
 
 const to = process.argv[2] || process.env.SMTP_USER;
-const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM } = process.env;
+const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
 
-if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !EMAIL_FROM) {
+const from = process.env.SMTP_FROM_EMAIL
+  ? process.env.SMTP_FROM_NAME
+    ? `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`
+    : process.env.SMTP_FROM_EMAIL
+  : process.env.EMAIL_FROM;
+
+if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !from) {
   console.error(
-    "Missing SMTP settings. Fill SMTP_HOST, SMTP_USER, SMTP_PASS, EMAIL_FROM in .env.local.",
+    "Missing SMTP settings. Need SMTP_HOST, SMTP_USER, SMTP_PASS, and SMTP_FROM_EMAIL (or EMAIL_FROM).",
   );
   process.exit(1);
 }
@@ -25,7 +31,7 @@ try {
   await tx.verify();
   console.log("✓ SMTP login OK. Sending test email to", to, "…");
   const info = await tx.sendMail({
-    from: EMAIL_FROM,
+    from,
     to,
     subject: "Pitching Tool — test email ✅",
     text: "If you're reading this, your email sending is set up correctly.",
