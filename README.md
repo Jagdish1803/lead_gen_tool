@@ -18,8 +18,10 @@ See [CONCEPT.md](./CONCEPT.md) for the full concept, decisions, and phased plan.
 
 - **Phase 0 — Foundation** ✅ app scaffold, UI shell, Postgres wiring, DB schema.
 - **Phase 1 — Finder** ✅ SerpApi Google Maps search → dedupe → DB → live dashboard.
+- **Phase 2 — Auditor** ✅ per-lead website checks (no-website, HTTPS, mobile,
+  stale, reachability) + best-effort PageSpeed (needs free `PAGESPEED_API_KEY`).
 
-Next up: **Phase 2 — Auditor** (check each website: exists? speed, mobile, issues).
+Next up: **Phase 3 — Writer** (AI drafts the personalized message per lead).
 
 ## Getting started
 
