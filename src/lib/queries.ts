@@ -77,6 +77,8 @@ export interface LeadWithAudit extends Business {
   pagespeed_mobile: number | null;
   message_body: string | null;
   message_template: string | null;
+  wa_sent: boolean;
+  email_sent: boolean;
 }
 
 export type LeadSort = "newest" | "rating" | "reviews" | "name";
@@ -132,7 +134,11 @@ export async function getLeadsWithAudits({
       a.summary as audit_summary,
       a.pagespeed_mobile,
       m.body as message_body,
-      m.template_key as message_template
+      m.template_key as message_template,
+      exists (select 1 from messages mw where mw.business_id = b.id
+        and mw.channel = 'whatsapp' and mw.status = 'sent') as wa_sent,
+      exists (select 1 from messages me where me.business_id = b.id
+        and me.channel = 'email' and me.status = 'sent') as email_sent
     from businesses b
     left join lateral (
       select * from audits
