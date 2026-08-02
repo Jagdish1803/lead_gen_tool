@@ -50,7 +50,7 @@ export default async function SettingsPage() {
   return (
     <AppShell>
       <AutoRefresh seconds={isConnected ? 8 : 4} />
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="flex w-full max-w-4xl flex-col gap-6">
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
 
         {/* WhatsApp connection */}

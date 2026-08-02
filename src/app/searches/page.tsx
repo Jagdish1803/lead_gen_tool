@@ -24,7 +24,7 @@ export default async function SearchesPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-6xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">Searches</h1>
           <span className="text-sm text-muted-foreground">
