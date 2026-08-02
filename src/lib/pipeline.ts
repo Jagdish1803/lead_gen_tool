@@ -5,6 +5,7 @@ import { runWriter } from "@/lib/writer";
 import { runEmailFinder } from "@/lib/email-finder";
 import { runEmailWriter } from "@/lib/email-writer";
 import { runEmailSender, isEmailConfigured } from "@/lib/email-sender";
+import { likelyHasWhatsApp } from "@/lib/phone";
 
 /**
  * Server-side pipeline runner. Runs detached (fire-and-forget) so it keeps
@@ -56,6 +57,19 @@ async function totalPending(): Promise<number> {
   return r.n;
 }
 
+/** Remove leads we can't reach at all — no email AND no WhatsApp number. */
+async function pruneUnreachable(): Promise<void> {
+  const rows = await sql<{ id: string; phone: string | null }[]>`
+    select id, phone from businesses
+    where (email is null or email = '')
+      and status not in ('contacted','replied','interested','client')
+  `;
+  const del = rows.filter((r) => !likelyHasWhatsApp(r.phone)).map((r) => r.id);
+  if (del.length > 0) {
+    await sql`delete from businesses where id = any(${del})`;
+  }
+}
+
 /** Drain one stage: run its batch repeatedly until nothing is left. */
 async function runStage(
   name: string,
@@ -96,6 +110,9 @@ async function runAll(): Promise<void> {
         const r = await runEmailFinder({ limit: 8 });
         return { done: r.processed, remaining: r.remaining };
       });
+      // Drop leads with no email and no WhatsApp — we can't reach them.
+      state.stage = "Cleaning up unreachable leads";
+      await pruneUnreachable();
       await runStage("Drafting emails", async () => {
         const r = await runEmailWriter({ limit: 6 });
         return { done: r.written, remaining: r.remaining };

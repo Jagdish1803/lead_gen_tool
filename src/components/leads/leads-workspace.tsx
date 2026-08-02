@@ -4,15 +4,19 @@ import { useMemo, useState } from "react";
 import { Star, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import type { LeadWithAudit } from "@/lib/queries";
 import { LeadPanel } from "@/components/leads/lead-panel";
-import { likelyHasWhatsApp } from "@/lib/phone";
+import { RowStatusSelect } from "@/components/leads/row-status-select";
+import { likelyHasWhatsApp, waMeLink } from "@/lib/phone";
 import {
   parseArea,
   daysAgo,
   issuesInfo,
-  STATUS_STYLES,
   CONTACTED_STATUSES,
   NOT_CONTACTED_STATUSES,
 } from "@/components/leads/lead-utils";
+
+function hasEmail(l: LeadWithAudit): boolean {
+  return Boolean(l.email && l.email !== "");
+}
 
 const PAGE_SIZE = 16;
 
@@ -21,7 +25,11 @@ type FilterKey =
   | "no_website"
   | "has_issues"
   | "not_contacted"
-  | "contacted";
+  | "contacted"
+  | "has_whatsapp"
+  | "no_whatsapp"
+  | "has_email"
+  | "no_email";
 
 function matchesFilter(l: LeadWithAudit, f: FilterKey): boolean {
   switch (f) {
@@ -33,6 +41,14 @@ function matchesFilter(l: LeadWithAudit, f: FilterKey): boolean {
       return NOT_CONTACTED_STATUSES.includes(l.status);
     case "contacted":
       return CONTACTED_STATUSES.includes(l.status);
+    case "has_whatsapp":
+      return likelyHasWhatsApp(l.phone);
+    case "no_whatsapp":
+      return !likelyHasWhatsApp(l.phone);
+    case "has_email":
+      return hasEmail(l);
+    case "no_email":
+      return !hasEmail(l);
     default:
       return true;
   }
@@ -52,6 +68,10 @@ export function LeadsWorkspace({ leads }: { leads: LeadWithAudit[] }) {
       not_contacted: leads.filter((l) => matchesFilter(l, "not_contacted"))
         .length,
       contacted: leads.filter((l) => matchesFilter(l, "contacted")).length,
+      has_whatsapp: leads.filter((l) => matchesFilter(l, "has_whatsapp")).length,
+      no_whatsapp: leads.filter((l) => matchesFilter(l, "no_whatsapp")).length,
+      has_email: leads.filter((l) => matchesFilter(l, "has_email")).length,
+      no_email: leads.filter((l) => matchesFilter(l, "no_email")).length,
     }),
     [leads],
   );
@@ -79,6 +99,10 @@ export function LeadsWorkspace({ leads }: { leads: LeadWithAudit[] }) {
     { key: "has_issues", label: "Has issues", n: counts.has_issues },
     { key: "not_contacted", label: "Not contacted", n: counts.not_contacted },
     { key: "contacted", label: "Contacted", n: counts.contacted },
+    { key: "has_whatsapp", label: "Has WhatsApp", n: counts.has_whatsapp },
+    { key: "no_whatsapp", label: "No WhatsApp", n: counts.no_whatsapp },
+    { key: "has_email", label: "Has email", n: counts.has_email },
+    { key: "no_email", label: "No email", n: counts.no_email },
   ];
 
   function exportCsv() {
@@ -224,6 +248,11 @@ export function LeadsWorkspace({ leads }: { leads: LeadWithAudit[] }) {
                         <span className="inline-flex items-center gap-1 tabular-nums">
                           {l.rating}
                           <Star className="size-3 fill-amber-400 text-amber-400" />
+                          {l.reviews_count != null && (
+                            <span className="text-xs text-muted-foreground">
+                              ({l.reviews_count})
+                            </span>
+                          )}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
@@ -255,19 +284,29 @@ export function LeadsWorkspace({ leads }: { leads: LeadWithAudit[] }) {
                       </span>
                     </td>
                     <td className="px-3 py-2.5">
-                      <span
-                        className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLES[l.status]}`}
-                      >
-                        {l.status}
-                      </span>
+                      <RowStatusSelect id={l.id} status={l.status} />
                     </td>
                     <td className="px-3 py-2.5">
                       <span className="flex items-center gap-1">
-                        <ChannelDot
-                          label="W"
-                          active={l.wa_sent}
-                          available={likelyHasWhatsApp(l.phone)}
-                        />
+                        {likelyHasWhatsApp(l.phone) ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const link = waMeLink(l.phone, l.message_body ?? "");
+                              if (link) window.open(link, "_blank", "noopener");
+                            }}
+                            title="Open WhatsApp"
+                            className={`inline-flex size-5 items-center justify-center rounded text-[11px] font-semibold ${
+                              l.wa_sent
+                                ? "bg-emerald-500/20 text-emerald-500"
+                                : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+                            }`}
+                          >
+                            W
+                          </button>
+                        ) : (
+                          <ChannelDot label="W" active={false} available={false} />
+                        )}
                         <ChannelDot
                           label="@"
                           active={l.email_sent}
