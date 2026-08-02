@@ -16,8 +16,10 @@ See [CONCEPT.md](./CONCEPT.md) for the full concept, decisions, and phased plan.
 
 ## Status
 
-**Phase 0 — Foundation** ✅ done: app scaffold, UI shell, Supabase wiring, DB schema.
-Next up: **Phase 1 — Finder** (SerpApi).
+- **Phase 0 — Foundation** ✅ app scaffold, UI shell, Postgres wiring, DB schema.
+- **Phase 1 — Finder** ✅ SerpApi Google Maps search → dedupe → DB → live dashboard.
+
+Next up: **Phase 2 — Auditor** (check each website: exists? speed, mobile, issues).
 
 ## Getting started
 
