@@ -1,12 +1,14 @@
 import { AppShell } from "@/components/app-shell";
 import { NewSearchForm } from "@/components/new-search-form";
 import { PIPELINE_STAGES } from "@/lib/types";
+import { getStageCounts, getRecentLeads } from "@/lib/queries";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -16,10 +18,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Placeholder metrics until Supabase is connected (Phase 1 onward).
-const STAGE_COUNTS: Record<string, number> = {};
+// Read from the DB per request.
+export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [counts, leads] = await Promise.all([
+    getStageCounts(),
+    getRecentLeads(),
+  ]);
+
   return (
     <AppShell>
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -47,7 +54,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <span className="text-2xl font-semibold tabular-nums">
-                    {STAGE_COUNTS[stage.key] ?? 0}
+                    {counts[stage.key] ?? 0}
                   </span>
                 </CardContent>
               </Card>
@@ -55,7 +62,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent leads (empty until Finder runs) */}
+        {/* Recent leads */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Recent leads</CardTitle>
@@ -71,15 +78,41 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="py-10 text-center text-sm text-muted-foreground"
-                  >
-                    No leads yet. Run a search once the Finder is wired up
-                    (Phase 1).
-                  </TableCell>
-                </TableRow>
+                {leads.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
+                      No leads yet. Run a search once the Finder is wired up
+                      (Phase 1).
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  leads.map((lead) => (
+                    <TableRow key={lead.id}>
+                      <TableCell className="font-medium">{lead.name}</TableCell>
+                      <TableCell>{lead.phone ?? "—"}</TableCell>
+                      <TableCell>
+                        {lead.website ? (
+                          <a
+                            href={lead.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            visit
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">none</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{lead.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

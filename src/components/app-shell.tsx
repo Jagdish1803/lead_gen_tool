@@ -44,8 +44,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="text-sm font-medium md:hidden">Pitching Tool</span>
           <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-amber-500" />
-              Not connected to Supabase
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              Supabase Postgres connected
             </span>
           </div>
         </header>
