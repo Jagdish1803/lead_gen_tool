@@ -198,6 +198,109 @@ export async function getSearches(limit = 100): Promise<Search[]> {
   `;
 }
 
+/** Counts for the sidebar nav. */
+export async function getSidebarCounts(): Promise<{
+  leads: number;
+  searches: number;
+  outreach: number;
+}> {
+  const [r] = await sql<
+    { leads: number; searches: number; outreach: number }[]
+  >`
+    select
+      (select count(*)::int from businesses) as leads,
+      (select count(*)::int from searches) as searches,
+      (select count(*)::int from messages where status = 'sent') as outreach
+  `;
+  return r;
+}
+
+export interface NextAction {
+  id: string;
+  name: string;
+  address: string | null;
+  rating: number | null;
+  phone: string | null;
+  email: string | null;
+  issue_count: number;
+  wa_body: string | null;
+  email_subject: string | null;
+  email_body: string | null;
+}
+
+/** Top leads worth acting on: audited/drafted, most issues, best rating. */
+export async function getBestNextActions(limit = 5): Promise<NextAction[]> {
+  return sql<NextAction[]>`
+    select
+      b.id, b.name, b.address, b.rating, b.phone, b.email,
+      coalesce(jsonb_array_length(a.issues), 0) as issue_count,
+      wm.body as wa_body,
+      em.subject as email_subject, em.body as email_body
+    from businesses b
+    left join lateral (select issues from audits
+      where business_id = b.id order by created_at desc limit 1) a on true
+    left join lateral (select body from messages
+      where business_id = b.id and channel = 'whatsapp'
+      order by created_at desc limit 1) wm on true
+    left join lateral (select subject, body from messages
+      where business_id = b.id and channel = 'email'
+      order by created_at desc limit 1) em on true
+    where b.status in ('audited', 'drafted', 'queued')
+    order by coalesce(jsonb_array_length(a.issues), 0) desc,
+             b.rating desc nulls last
+    limit ${limit}
+  `;
+}
+
+/** Outreach summary: sends per channel + reply rate. */
+export async function getOutreachStats(): Promise<{
+  waSent: number;
+  emailSent: number;
+  replyRate: number;
+}> {
+  const [r] = await sql<
+    { wa_sent: number; email_sent: number; replied: number; contacted: number }[]
+  >`
+    select
+      (select count(*)::int from messages where channel = 'whatsapp' and status = 'sent') as wa_sent,
+      (select count(*)::int from messages where channel = 'email' and status = 'sent') as email_sent,
+      (select count(*)::int from businesses where status in ('replied','interested','client')) as replied,
+      (select count(*)::int from businesses where status in ('contacted','replied','interested','client')) as contacted
+  `;
+  return {
+    waSent: r.wa_sent,
+    emailSent: r.email_sent,
+    replyRate: r.contacted > 0 ? Math.round((r.replied / r.contacted) * 100) : 0,
+  };
+}
+
+/** Daily sends (whatsapp + email) for the last N days, oldest→newest. */
+export async function getOutreachDaily(
+  days = 14,
+): Promise<{ day: string; wa: number; email: number }[]> {
+  const rows = await sql<{ day: string; channel: string; n: number }[]>`
+    select (sent_at::date)::text as day, channel, count(*)::int as n
+    from messages
+    where status = 'sent' and sent_at >= now() - make_interval(days => ${days})
+    group by day, channel
+  `;
+  const map = new Map<string, { wa: number; email: number }>();
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    map.set(d.toISOString().slice(0, 10), { wa: 0, email: 0 });
+  }
+  for (const r of rows) {
+    const b = map.get(r.day);
+    if (b) {
+      if (r.channel === "whatsapp") b.wa = r.n;
+      else if (r.channel === "email") b.email = r.n;
+    }
+  }
+  return [...map.entries()].map(([day, v]) => ({ day, ...v }));
+}
+
 /** Singleton app settings (pacing + master send switch). */
 export async function getAppSettings(): Promise<AppSettings> {
   const [s] = await sql<AppSettings[]>`select * from app_settings where id = 1`;

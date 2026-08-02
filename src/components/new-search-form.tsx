@@ -5,36 +5,29 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Search, Loader2 } from "lucide-react";
 import { runSearchAction } from "@/app/actions/search";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
-export function NewSearchForm() {
+export function NewSearchForm({
+  recent = [],
+}: {
+  recent?: { business_type: string; location: string }[];
+}) {
   const [businessType, setBusinessType] = useState("");
   const [location, setLocation] = useState("");
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  function onSubmit(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!businessType.trim() || !location.trim()) {
       toast.error("Enter both a business type and a location.");
       return;
     }
-
     startTransition(async () => {
       const result = await runSearchAction(businessType, location);
       if (result.ok) {
-        const { fetched, inserted, pages } = result.data;
-        toast.success(`Saved ${inserted} new business${inserted === 1 ? "" : "es"}`, {
-          description: `Found ${fetched} results across ${pages} page${pages === 1 ? "" : "s"} (${pages} SerpApi search${pages === 1 ? "" : "es"} used).`,
+        const { fetched, inserted } = result.data;
+        toast.success(`Saved ${inserted} new lead${inserted === 1 ? "" : "s"}`, {
+          description: `Found ${fetched} listings on Google Maps.`,
         });
         router.refresh();
       } else {
@@ -44,49 +37,59 @@ export function NewSearchForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Find businesses</CardTitle>
-        <CardDescription>
-          Enter a business type and a location. The finder pulls matching
-          businesses from Google Maps (up to ~60 per search).
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={onSubmit}
-          className="flex flex-col gap-4 sm:flex-row sm:items-end"
+    <div className="rounded-xl border bg-card p-5">
+      <h2 className="text-sm font-semibold">Find businesses on Google Maps</h2>
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        Pulls up to ~60 listings per search, auto-audits each one, then queues
+        outreach.
+      </p>
+
+      <form onSubmit={submit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={businessType}
+          onChange={(e) => setBusinessType(e.target.value)}
+          disabled={isPending}
+          placeholder="Dental clinic"
+          className="h-10 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+        <input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          disabled={isPending}
+          placeholder="Andheri, Mumbai"
+          className="h-10 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="business-type">Business type</Label>
-            <Input
-              id="business-type"
-              placeholder="Dental Clinic"
-              value={businessType}
-              onChange={(e) => setBusinessType(e.target.value)}
-              disabled={isPending}
-            />
-          </div>
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              placeholder="Mumbai"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              disabled={isPending}
-            />
-          </div>
-          <Button type="submit" className="gap-2" disabled={isPending}>
-            {isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Search className="size-4" />
-            )}
-            {isPending ? "Searching…" : "Search"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          {isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Search className="size-4" />
+          )}
+          Search
+        </button>
+      </form>
+
+      {recent.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Recent</span>
+          {recent.map((r, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                setBusinessType(r.business_type);
+                setLocation(r.location);
+              }}
+              className="rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              {r.business_type} · {r.location}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

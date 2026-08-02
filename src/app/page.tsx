@@ -3,204 +3,140 @@ import { NewSearchForm } from "@/components/new-search-form";
 import { AuditButton } from "@/components/audit-button";
 import { WriteButton } from "@/components/write-button";
 import { BatchButton } from "@/components/batch-button";
-import { PIPELINE_STAGES } from "@/lib/types";
-import { getStageCounts, getRecentLeads, getEmailCounts } from "@/lib/queries";
+import { NextActions } from "@/components/dashboard/next-actions";
+import { OutreachWeek } from "@/components/dashboard/outreach-week";
+import { PIPELINE_STAGES, type BusinessStatus } from "@/lib/types";
+import {
+  getStageCounts,
+  getBestNextActions,
+  getOutreachStats,
+  getOutreachDaily,
+  getSearches,
+  getEmailCounts,
+} from "@/lib/queries";
 import { isEmailConfigured } from "@/lib/email-sender";
 import {
   findEmailsAction,
   writeEmailsAction,
   sendEmailsAction,
 } from "@/app/actions/email";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
-// Read from the DB per request.
 export const dynamic = "force-dynamic";
 
+const STAGE_TONE: Record<BusinessStatus, { text: string; bar: string }> = {
+  found: { text: "text-foreground", bar: "bg-foreground" },
+  audited: { text: "text-amber-500", bar: "bg-amber-500" },
+  drafted: { text: "text-blue-500", bar: "bg-blue-500" },
+  queued: { text: "text-blue-500", bar: "bg-blue-500" },
+  contacted: { text: "text-foreground", bar: "bg-foreground/70" },
+  replied: { text: "text-emerald-500", bar: "bg-emerald-500" },
+  interested: { text: "text-emerald-500", bar: "bg-emerald-500" },
+  client: { text: "text-emerald-500", bar: "bg-emerald-500" },
+  skipped: { text: "text-muted-foreground", bar: "bg-muted-foreground" },
+  failed: { text: "text-red-500", bar: "bg-red-500" },
+};
+
 export default async function DashboardPage() {
-  const [counts, leads, email] = await Promise.all([
+  const [counts, actions, stats, daily, searches, email] = await Promise.all([
     getStageCounts(),
-    getRecentLeads(),
+    getBestNextActions(5),
+    getOutreachStats(),
+    getOutreachDaily(14),
+    getSearches(4),
     getEmailCounts(),
   ]);
 
-  const emailReady = isEmailConfigured();
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const maxStage = Math.max(
+    1,
+    ...PIPELINE_STAGES.map((s) => counts[s.key] ?? 0),
+  );
+  const recent = searches.map((s) => ({
+    business_type: s.business_type,
+    location: s.location,
+  }));
 
   return (
-    <AppShell>
-      <div className="flex w-full flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Find, audit, and reach out to local businesses — all in one place.
-          </p>
-        </div>
+    <AppShell title="Dashboard" subtitle="Find, audit and pitch local businesses">
+      <div className="flex w-full flex-col gap-5">
+        <NewSearchForm recent={recent} />
 
-        {/* Channel status strip */}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border px-4 py-2.5 text-sm">
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className={`size-2 rounded-full ${emailReady ? "bg-emerald-500" : "bg-amber-500"}`}
-            />
-            Email:{" "}
-            <span className="font-medium">
-              {emailReady ? "connected" : "not set up"}
+        {/* Pipeline */}
+        <div>
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h2 className="text-sm font-semibold">Pipeline</h2>
+            <span className="text-xs text-muted-foreground">
+              {total} leads across {searches.length} search
+              {searches.length === 1 ? "" : "es"}
             </span>
-          </span>
-          <span className="text-muted-foreground">
-            {email.toSend} ready to send · {email.sent} sent
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-sky-500" />
-            WhatsApp:{" "}
-            <span className="font-medium">manual (tap to send)</span>
-          </span>
-        </div>
-
-        <NewSearchForm />
-
-        {/* Funnel */}
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium text-muted-foreground">
-              Pipeline
-            </h2>
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center gap-1.5">
               <AuditButton pending={counts.found ?? 0} />
               <WriteButton pending={counts.audited ?? 0} />
+              <BatchButton
+                pending={email.toFind}
+                idleLabel={`Find ${email.toFind} emails`}
+                runningVerb="Finding emails"
+                emptyLabel="Emails found"
+                action={findEmailsAction}
+              />
+              <BatchButton
+                pending={email.toDraft}
+                idleLabel={`Draft ${email.toDraft}`}
+                runningVerb="Drafting emails"
+                emptyLabel="Drafted"
+                action={writeEmailsAction}
+              />
+              <BatchButton
+                pending={isEmailConfigured() ? email.toSend : 0}
+                idleLabel={`Send ${email.toSend}`}
+                runningVerb="Sending emails"
+                emptyLabel="Send emails"
+                action={sendEmailsAction}
+              />
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-            {PIPELINE_STAGES.map((stage) => (
-              <Card key={stage.key}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground">
+            {PIPELINE_STAGES.map((stage) => {
+              const n = counts[stage.key] ?? 0;
+              const tone = STAGE_TONE[stage.key];
+              return (
+                <div key={stage.key} className="rounded-lg border bg-card p-3">
+                  <div className="text-[11px] text-muted-foreground">
                     {stage.label}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <span className="text-2xl font-semibold tabular-nums">
-                    {counts[stage.key] ?? 0}
-                  </span>
-                </CardContent>
-              </Card>
-            ))}
+                  </div>
+                  <div
+                    className={`mt-1 text-2xl font-semibold tabular-nums ${tone.text}`}
+                  >
+                    {n}
+                  </div>
+                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full ${tone.bar}`}
+                      style={{ width: `${(n / maxStage) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Email outreach */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="text-base">Email outreach</CardTitle>
-              <div className="flex flex-wrap items-center gap-2">
-                <BatchButton
-                  pending={email.toFind}
-                  idleLabel={`Find ${email.toFind} emails`}
-                  runningVerb="Finding emails"
-                  emptyLabel="Emails found"
-                  action={findEmailsAction}
-                />
-                <BatchButton
-                  pending={email.toDraft}
-                  idleLabel={`Draft ${email.toDraft} emails`}
-                  runningVerb="Drafting emails"
-                  emptyLabel="Emails drafted"
-                  action={writeEmailsAction}
-                />
-                <BatchButton
-                  pending={emailReady ? email.toSend : 0}
-                  idleLabel={`Send ${email.toSend} emails`}
-                  runningVerb="Sending emails"
-                  emptyLabel={emailReady ? "Nothing to send" : "Send emails"}
-                  action={sendEmailsAction}
-                />
-              </div>
+        {/* Best next actions + Outreach this week */}
+        <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+          <div className="rounded-xl border bg-card p-5">
+            <div className="mb-1 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Best next actions</h2>
+              <span className="text-xs text-muted-foreground">ranked by fit</span>
             </div>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Find business emails from their websites → draft an email → send
-            automatically.{" "}
-            {emailReady ? (
-              <span className="text-emerald-600 dark:text-emerald-400">
-                SMTP configured.
-              </span>
-            ) : (
-              <span className="text-amber-600 dark:text-amber-500">
-                Add SMTP settings in .env.local to enable sending.
-              </span>
-            )}
-          </CardContent>
-        </Card>
+            <NextActions actions={actions} />
+          </div>
 
-        {/* Recent leads */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent leads</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Business</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Website</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leads.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      No leads yet. Run a search once the Finder is wired up
-                      (Phase 1).
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  leads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="font-medium">{lead.name}</TableCell>
-                      <TableCell>{lead.phone ?? "—"}</TableCell>
-                      <TableCell>
-                        {lead.website ? (
-                          <a
-                            href={lead.website}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary underline-offset-2 hover:underline"
-                          >
-                            visit
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">none</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{lead.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+          <div className="rounded-xl border bg-card p-5">
+            <h2 className="mb-4 text-sm font-semibold">Outreach this week</h2>
+            <OutreachWeek stats={stats} daily={daily} />
+          </div>
+        </div>
       </div>
     </AppShell>
   );
