@@ -34,6 +34,36 @@ export async function getAllLeads(limit = 200): Promise<Business[]> {
   `;
 }
 
+export interface LeadWithAudit extends Business {
+  has_website: boolean | null;
+  issues: string[] | null;
+  audit_summary: string | null;
+  pagespeed_mobile: number | null;
+}
+
+/** All leads with their most recent audit (if any), newest first. */
+export async function getLeadsWithAudits(
+  limit = 200,
+): Promise<LeadWithAudit[]> {
+  return sql<LeadWithAudit[]>`
+    select
+      b.*,
+      a.has_website,
+      a.issues,
+      a.summary as audit_summary,
+      a.pagespeed_mobile
+    from businesses b
+    left join lateral (
+      select * from audits
+      where business_id = b.id
+      order by created_at desc
+      limit 1
+    ) a on true
+    order by b.created_at desc
+    limit ${limit}
+  `;
+}
+
 /** Search history, newest first. */
 export async function getSearches(limit = 100): Promise<Search[]> {
   return sql<Search[]>`

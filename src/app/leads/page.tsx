@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { getAllLeads } from "@/lib/queries";
+import { getLeadsWithAudits } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -14,8 +14,19 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// Human labels for issue codes.
+const ISSUE_LABELS: Record<string, string> = {
+  no_website: "no website",
+  unreachable: "unreachable",
+  no_https: "no HTTPS",
+  not_mobile_friendly: "not mobile-friendly",
+  slow_mobile: "slow on mobile",
+  stale_content: "outdated",
+  audit_error: "audit error",
+};
+
 export default async function LeadsPage() {
-  const leads = await getAllLeads();
+  const leads = await getLeadsWithAudits();
 
   return (
     <AppShell>
@@ -33,76 +44,93 @@ export default async function LeadsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Business</TableHead>
-                  <TableHead>Category</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Website</TableHead>
-                  <TableHead className="text-right">Rating</TableHead>
+                  <TableHead>Audit</TableHead>
+                  <TableHead className="text-right">Speed</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Maps</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {leads.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={6}
                       className="py-10 text-center text-sm text-muted-foreground"
                     >
                       No leads yet. Run a search from the dashboard.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  leads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="font-medium">
-                        <div>{lead.name}</div>
-                        {lead.address && (
-                          <div className="text-xs text-muted-foreground">
-                            {lead.address}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {lead.category ?? "—"}
-                      </TableCell>
-                      <TableCell>{lead.phone ?? "—"}</TableCell>
-                      <TableCell>
-                        {lead.website ? (
-                          <a
-                            href={lead.website}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary underline-offset-2 hover:underline"
-                          >
-                            visit
-                          </a>
-                        ) : (
-                          <Badge variant="outline">no website</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {lead.rating != null
-                          ? `${lead.rating}${lead.reviews_count ? ` (${lead.reviews_count})` : ""}`
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{lead.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {lead.maps_url ? (
-                          <Link
-                            href={lead.maps_url}
-                            target="_blank"
-                            className="text-primary underline-offset-2 hover:underline"
-                          >
-                            open
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  leads.map((lead) => {
+                    const issues = lead.issues ?? [];
+                    return (
+                      <TableRow key={lead.id}>
+                        <TableCell className="font-medium">
+                          <div>{lead.name}</div>
+                          {lead.maps_url && (
+                            <Link
+                              href={lead.maps_url}
+                              target="_blank"
+                              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                            >
+                              view on maps
+                            </Link>
+                          )}
+                        </TableCell>
+                        <TableCell>{lead.phone ?? "—"}</TableCell>
+                        <TableCell>
+                          {lead.website ? (
+                            <a
+                              href={lead.website}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary underline-offset-2 hover:underline"
+                            >
+                              visit
+                            </a>
+                          ) : (
+                            <Badge variant="outline">no website</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          {issues.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {issues.map((code) => (
+                                <Badge
+                                  key={code}
+                                  variant={
+                                    code === "no_website"
+                                      ? "default"
+                                      : "destructive"
+                                  }
+                                  className="font-normal"
+                                >
+                                  {ISSUE_LABELS[code] ?? code}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : lead.audit_summary ? (
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                              looks good
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              not audited
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {lead.pagespeed_mobile != null
+                            ? `${lead.pagespeed_mobile}/100`
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{lead.status}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
