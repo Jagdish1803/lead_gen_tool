@@ -18,6 +18,13 @@ import { waMeLink } from "@/lib/phone";
 import { markContactedAction } from "@/app/actions/contact";
 import { updateNotesAction, updateStatusAction } from "@/app/actions/lead";
 import { parseArea, STATUS_STYLES } from "@/components/leads/lead-utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STATUSES: BusinessStatus[] = [
   "found",
@@ -100,9 +107,17 @@ export function LeadPanel({
     const link = waMeLink(b.phone, waMsg?.body ?? "");
     if (!link) return toast.error("No phone number");
     window.open(link, "_blank", "noopener");
-    startTransition(async () => {
-      await markContactedAction(b.id);
-      router.refresh();
+    // Don't auto-mark — only mark contacted once the user confirms they sent it.
+    toast("Opened WhatsApp", {
+      description: "Send it, then mark this lead as contacted.",
+      action: {
+        label: "Mark sent",
+        onClick: () =>
+          startTransition(async () => {
+            await markContactedAction(b.id);
+            router.refresh();
+          }),
+      },
     });
   }
 
@@ -122,12 +137,15 @@ export function LeadPanel({
     });
   }
 
-  function changeStatus(next: BusinessStatus) {
-    if (!b) return;
+  function changeStatus(next: string | null) {
+    if (!b || !next) return;
+    const status = next as BusinessStatus;
     startTransition(async () => {
-      const res = await updateStatusAction(b.id, next);
+      const res = await updateStatusAction(b.id, status);
       if (res.ok) {
-        setDetail((d) => (d ? { ...d, business: { ...d.business, status: next } } : d));
+        setDetail((d) =>
+          d ? { ...d, business: { ...d.business, status } } : d,
+        );
         router.refresh();
       } else toast.error(res.error);
     });
@@ -204,18 +222,25 @@ export function LeadPanel({
             {/* Status */}
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Status</span>
-              <select
+              <Select
                 value={b.status}
-                onChange={(e) => changeStatus(e.target.value as BusinessStatus)}
+                onValueChange={changeStatus}
                 disabled={isPending}
-                className={`rounded-md px-2 py-1 text-[12px] font-medium outline-none ${STATUS_STYLES[b.status]}`}
               >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s} className="bg-background text-foreground">
-                    {s}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  size="sm"
+                  className={`h-7 w-[150px] border-0 text-xs font-medium capitalize ${STATUS_STYLES[b.status]}`}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s} value={s} className="text-xs capitalize">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Site audit */}

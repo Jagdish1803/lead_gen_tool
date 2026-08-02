@@ -33,9 +33,16 @@ export function NextActions({ actions }: { actions: NextAction[] }) {
     const link = waMeLink(a.phone, a.wa_body ?? "");
     if (!link) return toast.error("No phone number");
     window.open(link, "_blank", "noopener");
-    startTransition(async () => {
-      await markContactedAction(a.id);
-      router.refresh();
+    toast("Opened WhatsApp", {
+      description: `Send to ${a.name}, then mark contacted.`,
+      action: {
+        label: "Mark sent",
+        onClick: () =>
+          startTransition(async () => {
+            await markContactedAction(a.id);
+            router.refresh();
+          }),
+      },
     });
   }
 
