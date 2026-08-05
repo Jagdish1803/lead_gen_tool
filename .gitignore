@@ -44,3 +44,6 @@ next-env.d.ts
 
 # Baileys WhatsApp auth session (secrets — never commit)
 baileys_auth/
+
+# Personal scratch notes (not part of the app)
+future deployment
