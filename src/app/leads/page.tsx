@@ -5,7 +5,7 @@ import { LeadsWorkspace } from "@/components/leads/leads-workspace";
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
-  const leads = await getLeadsWithAudits({ limit: 300 });
+  const leads = await getLeadsWithAudits();
 
   return (
     <AppShell>

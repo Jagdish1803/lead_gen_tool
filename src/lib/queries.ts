@@ -25,7 +25,7 @@ export interface SentEmail {
 }
 
 /** All outbound emails (drafted + sent), newest first. */
-export async function getSentEmails(limit = 200): Promise<SentEmail[]> {
+export async function getSentEmails(limit = 5000): Promise<SentEmail[]> {
   return sql<SentEmail[]>`
     select
       m.id, m.business_id, b.name as business_name, b.email as to_email,
@@ -61,7 +61,7 @@ export async function getRecentLeads(limit = 10): Promise<Business[]> {
 }
 
 /** All leads, newest first. */
-export async function getAllLeads(limit = 200): Promise<Business[]> {
+export async function getAllLeads(limit = 5000): Promise<Business[]> {
   return sql<Business[]>`
     select *
     from businesses
@@ -93,7 +93,7 @@ export type LeadFilter =
 export async function getLeadsWithAudits({
   sort = "newest",
   filter = "all",
-  limit = 300,
+  limit = 5000,
 }: {
   sort?: LeadSort;
   filter?: LeadFilter;
@@ -189,7 +189,7 @@ export async function getLeadDetail(id: string): Promise<LeadDetail | null> {
 }
 
 /** Search history, newest first. */
-export async function getSearches(limit = 100): Promise<Search[]> {
+export async function getSearches(limit = 1000): Promise<Search[]> {
   return sql<Search[]>`
     select *
     from searches

@@ -122,7 +122,7 @@ export async function getSentEmails(): Promise<SentEmail[]> {
 export async function getLeadsWithAudits({
   sort = "newest",
   filter = "all",
-  limit = 300,
+  limit = 5000,
 }: {
   sort?: LeadSort;
   filter?: LeadFilter;
@@ -143,7 +143,7 @@ export async function getLeadDetail(id: string): Promise<LeadDetail | null> {
   return res?.detail ?? null;
 }
 
-export async function getSearches(limit = 100): Promise<Search[]> {
+export async function getSearches(limit = 1000): Promise<Search[]> {
   const { searches } = await apiGet<{ searches: Search[] }>(
     `/api/searches?limit=${limit}`,
   );
